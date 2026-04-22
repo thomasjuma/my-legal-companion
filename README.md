@@ -19,7 +19,10 @@ graph TB
     
     Adviser -->|Legal Advice| Evaluator[Evaluator<br/>Agent]
     
+    subgraph Evaluation
     Evaluator --> Decision{Pass?}
+    end
+
     Decision -->|Yes| Writer[Writer<br/>Agent]
     Decision -.Evaluation Report.-> Adviser
 
@@ -33,11 +36,10 @@ graph TB
     Researcher -->|Store Legal Insights| Vectors
     Researcher -->|Web Research| Browser[Web Browser<br/>MCP Server]
     
-    style Adviser fill:#1C398E,stroke:#333,stroke-width:3px
+    style Adviser fill:#155DFC,stroke:#333,stroke-width:3px
     style Evaluator fill:#FF5F15
-    style Writer fill:#35530E
-    style Schedule fill:#9333EA
-    style Researcher fill:#721378
+    style Writer fill:#05DF72
+    style Researcher fill:#C81CDE
 ```
 
 ## Agent Responsibilities
