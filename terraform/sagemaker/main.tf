@@ -21,7 +21,7 @@ data "aws_caller_identity" "current" {}
 
 # IAM role for SageMaker
 resource "aws_iam_role" "sagemaker_role" {
-  name = "alex-sagemaker-role"
+  name = "counsel-sagemaker-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -44,7 +44,7 @@ resource "aws_iam_role_policy_attachment" "sagemaker_full_access" {
 
 # SageMaker Model
 resource "aws_sagemaker_model" "embedding_model" {
-  name               = "alex-embedding-model"
+  name               = "counsel-embedding-model"
   execution_role_arn = aws_iam_role.sagemaker_role.arn
 
   primary_container {
@@ -60,7 +60,7 @@ resource "aws_sagemaker_model" "embedding_model" {
 
 # Serverless Inference Config
 resource "aws_sagemaker_endpoint_configuration" "serverless_config" {
-  name = "alex-embedding-serverless-config"
+  name = "counsel-embedding-serverless-config"
 
   production_variants {
     model_name = aws_sagemaker_model.embedding_model.name
@@ -83,7 +83,7 @@ resource "time_sleep" "wait_for_iam_propagation" {
 
 # SageMaker Endpoint
 resource "aws_sagemaker_endpoint" "embedding_endpoint" {
-  name                 = "alex-embedding-endpoint"
+  name                 = "counsel-embedding-endpoint"
   endpoint_config_name = aws_sagemaker_endpoint_configuration.serverless_config.name
   
   depends_on = [
