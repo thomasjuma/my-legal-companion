@@ -70,12 +70,12 @@ def list_all_vectors():
             text_preview = metadata.get('text', '')[:100] + '...' if len(metadata.get('text', '')) > 100 else metadata.get('text', '')
             
             print(f"{i}. Vector ID: {vector['key']}")
-            if metadata.get('ticker'):
-                print(f"   Ticker: {metadata['ticker']}")
-            if metadata.get('company_name'):
-                print(f"   Company: {metadata['company_name']}")
-            if metadata.get('sector'):
-                print(f"   Sector: {metadata['sector']}")
+            if metadata.get('doc_id'):
+                print(f"   Doc ID: {metadata['doc_id']}")
+            if metadata.get('title'):
+                print(f"   Title: {metadata['title']}")
+            if metadata.get('domain'):
+                print(f"   Domain: {metadata['domain']}")
             print(f"   Text: {text_preview}")
             print()
             
@@ -109,8 +109,10 @@ def search_vectors(query_text, k=5):
             distance = vector.get('distance', 0)
             
             print(f"Score: {1 - distance:.3f}")  # Convert distance to similarity score
-            if metadata.get('company_name'):
-                print(f"Company: {metadata['company_name']} ({metadata.get('ticker', 'N/A')})")
+            if metadata.get('doc_id'):
+                print(f"Doc ID: {metadata['doc_id']}")
+            if metadata.get('title'):
+                print(f"Title: {metadata['title']}")
             print(f"Text: {metadata.get('text', '')[:200]}...")
             print()
             

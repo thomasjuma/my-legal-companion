@@ -81,7 +81,7 @@ def lambda_handler(event, context):
                 "data": {"float32": embedding},
                 "metadata": {
                     "text": text,
-                    "timestamp": datetime.datetime.utcnow().isoformat(),
+                    "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
                     **metadata  # Include any additional metadata
                 }
             }]

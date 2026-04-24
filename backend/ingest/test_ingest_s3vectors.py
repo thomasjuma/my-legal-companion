@@ -64,7 +64,7 @@ def ingest_document(text, metadata=None):
             "data": {"float32": embedding},
             "metadata": {
                 "text": text,
-                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
                 **(metadata or {})  # Include any additional metadata
             }
         }]
@@ -126,7 +126,7 @@ def main():
                 {
             "text": (
                 "Negligence requires a duty of care, breach of that duty, causation (actual and proximate), "
-                "and damages. A defendant’s conduct is often measured against the reasonable person standard "
+                "and damages. A defendant's conduct is often measured against the reasonable person standard "
                 "unless a professional or heightened duty applies."
             ),
             "metadata": {
@@ -154,7 +154,7 @@ def main():
     
     # Ingest each document
     for i, doc in enumerate(test_docs, 1):
-        print(f"Ingesting document {i}: {doc['metadata'].get('ticker', 'Unknown')}")
+        print(f"Ingesting document {i}: {doc['metadata'].get('doc_id', 'Unknown')}")
         try:
             doc_id = ingest_document(doc['text'], doc['metadata'])
             print(f"  ✓ Success! Document ID: {doc_id}")
@@ -165,7 +165,7 @@ def main():
     print("Testing complete!")
     print("\nYour S3 Vectors knowledge base now contains information about:")
     for doc in test_docs:
-        print(f"  - {doc['metadata']['company_name']} ({doc['metadata']['ticker']})")
+        print(f"  - {doc['metadata']['title']} ({doc['metadata']['doc_id']})")
     
     print("\n⏱️  Note: S3 Vectors updates are available immediately.")
     print("   You can run test_search_s3vectors.py right away to search!")
