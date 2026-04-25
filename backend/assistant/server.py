@@ -117,7 +117,7 @@ async def research(request: ResearchRequest) -> str:
 EMBED_AUTO_BATCH_SIZE = int(os.getenv("EMBED_AUTO_BATCH_SIZE", "32"))
 
 
-@app.get("/embed/auto")
+@app.get("/embed")
 def embed_auto():
     """
     Chunk Google Drive legal docs and ingest in bulk: one API request per batch
