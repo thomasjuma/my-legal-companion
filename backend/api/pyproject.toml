@@ -1,0 +1,20 @@
+# Dependency manifest only — this directory is not an installable Python package.
+# Run the app from this folder:  uv run uvicorn main:app
+#   (or:  python -m uvicorn main:app  with the venv that has `database` installed)
+
+[project]
+name = "legal-companion-api-deps"
+version = "0.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "pydantic>=2.0.0",
+    "uvicorn[standard]>=0.32.0",
+    "legal-companion-database",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+legal-companion-database = { path = "../database", editable = true }
