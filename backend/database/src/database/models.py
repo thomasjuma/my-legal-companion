@@ -5,7 +5,9 @@ Import this module (or a package that re-exports your models) before
 """
 
 
-from sqlalchemy import String, Text, DateTime, func
+from __future__ import annotations
+
+from sqlalchemy import ForeignKey, String, Text, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from enum import Enum
 from .base import Base
@@ -28,8 +30,14 @@ class DocumentReference(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(255))
     url: Mapped[str] = mapped_column(String(255))
+    consultation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("consultations.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[object] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+    consultation: Mapped[Consultation | None] = relationship(
+        "Consultation", back_populates="document_references"
     )
 
 class CaseReference(Base):
@@ -38,8 +46,14 @@ class CaseReference(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(255))
     url: Mapped[str] = mapped_column(String(255))
+    consultation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("consultations.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[object] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+    consultation: Mapped[Consultation | None] = relationship(
+        "Consultation", back_populates="case_references"
     )
 
 class ConsultationType(str, Enum):
