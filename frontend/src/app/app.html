@@ -1,0 +1,26 @@
+<header class="app-bar">
+  <a routerLink="/" class="brand" [routerLinkActive]="'on'" [routerLinkActiveOptions]="{ exact: true }">
+    Legal Companion
+  </a>
+  <nav class="app-nav" aria-label="Main">
+    @if (clerk.isLoaded() && clerk.isSignedIn()) {
+      <a routerLink="/home" routerLinkActive="active"> Home </a>
+      <a routerLink="/consultations" routerLinkActive="active"> Consultations </a>
+      <a routerLink="/chat" routerLinkActive="active"> Chat </a>
+      <a routerLink="/dashboard" routerLinkActive="active"> Account </a>
+    }
+  </nav>
+  <div class="app-auth" aria-label="Session">
+    @if (clerk.isLoaded()) {
+      @if (clerk.isSignedIn()) {
+        <clerk-user-button />
+      } @else {
+        <a class="auth-link" routerLink="/sign-in">Sign in</a>
+        <a class="auth-link auth-link-primary" routerLink="/sign-up">Sign up</a>
+      }
+    }
+  </div>
+</header>
+<main class="app-main">
+  <router-outlet />
+</main>

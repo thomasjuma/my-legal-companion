@@ -1,14 +1,19 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
+from clerk_auth import clerk_bearer, get_clerk_user_id
 from database import get_crud, get_db
 from database.models import Consultation
 
 from schemas import ConsultationCreate, ConsultationRead
 
-router = APIRouter(prefix="/api/consultations", tags=["consultations"])
+router = APIRouter(
+    prefix="/api/consultations",
+    tags=["consultations"],
+    dependencies=[Depends(clerk_bearer)],
+)
 _consultation_crud = get_crud(Consultation)
 
 
@@ -18,12 +23,14 @@ _consultation_crud = get_crud(Consultation)
     status_code=status.HTTP_201_CREATED,
 )
 def create_consultation(
+    request: Request,
     body: ConsultationCreate,
     session: Session = Depends(get_db),
 ) -> Consultation:
+    sub = get_clerk_user_id(request)
     row = _consultation_crud.create(
         session,
-        data=body.model_dump(),
+        data=body.model_dump() | {"clerk_user_id": sub},
     )
     session.commit()
     session.refresh(row)
@@ -32,14 +39,17 @@ def create_consultation(
 
 @router.get("", response_model=list[ConsultationRead])
 def list_consultations(
+    request: Request,
     session: Session = Depends(get_db),
     offset: int = 0,
     limit: int = 100,
 ) -> list[Consultation]:
+    sub = get_clerk_user_id(request)
     return _consultation_crud.get_many(
         session,
         offset=offset,
         limit=limit,
         order_by="created_at",
         descending=True,
+        clerk_user_id=sub,
     )

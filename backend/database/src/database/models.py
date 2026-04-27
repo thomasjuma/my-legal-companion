@@ -69,6 +69,10 @@ class Consultation(Base):
     __tablename__ = "consultations"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    # Clerk `sub` for the signed-in user; nullable for pre-migration rows
+    clerk_user_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
     consultation_type: Mapped[ConsultationType] = mapped_column(String(255))
     consultation_query: Mapped[str] = mapped_column(Text)
     consultation_report: Mapped[str] = mapped_column(Text)

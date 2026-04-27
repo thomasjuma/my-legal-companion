@@ -1,0 +1,12 @@
+<section class="dashboard" aria-labelledby="dash-title">
+  <h1 id="dash-title">Account</h1>
+  @if (clerk.user(); as user) {
+    <p class="greeting">Signed in as {{ user.primaryEmailAddress?.emailAddress ?? user.id }}</p>
+  }
+  <p class="actions">
+    <clerk-user-button />
+  </p>
+  <p class="back">
+    <a routerLink="/home">Back to app</a>
+  </p>
+</section>

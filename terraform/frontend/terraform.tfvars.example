@@ -1,0 +1,6 @@
+# Part: Frontend (S3 + CloudFront) — apply after database, agents, and ../api
+
+# Must match the region used for ../api and ../database
+aws_region = "us-east-1"
+
+# App Runner, Clerk, OpenAI, and CORS are set in `terraform/api/terraform.tfvars` (or equivalent)

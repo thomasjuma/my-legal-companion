@@ -1,0 +1,82 @@
+<div class="page">
+  <header class="page-head">
+    <h1>Your consultations</h1>
+    <p class="lede">
+      Consultation records for your account, newest first.
+    </p>
+  </header>
+
+  @if (loadError()) {
+    <p class="banner err" role="alert">{{ loadError() }}</p>
+  }
+
+  <div class="layout">
+    <div class="toolbar">
+      <h2 id="list-h">History</h2>
+      <button
+        type="button"
+        class="ghost"
+        (click)="reload()"
+        [disabled]="listLoading()"
+      >
+        @if (listLoading()) {
+          Loading…
+        } @else {
+          Refresh
+        }
+      </button>
+    </div>
+
+    @if (listLoading() && !rows().length) {
+      <p class="muted" aria-live="polite">Loading list…</p>
+    } @else {
+      <ul class="ledger" role="list" aria-labelledby="list-h">
+        @for (c of rows(); track c.id) {
+          <li>
+            <button
+              type="button"
+              class="row"
+              [class.open]="selected()?.id === c.id"
+              (click)="select(c)"
+              [attr.aria-expanded]="selected()?.id === c.id"
+              [attr.aria-controls]="'detail-' + c.id"
+              id="row-{{ c.id }}"
+            >
+              <span class="row-top">
+                <span class="id">#{{ c.id }}</span>
+                <span class="badge-type">{{ c.consultation_type }}</span>
+              </span>
+              <span class="preview">{{ c.consultation_query }}</span>
+              <time class="row-time" [dateTime]="c.created_at">
+                {{ c.created_at | date: 'medium' }}
+              </time>
+            </button>
+            @if (selected()?.id === c.id) {
+              <div
+                class="detail"
+                [attr.id]="'detail-' + c.id"
+                role="region"
+                [attr.aria-labelledby]="'row-' + c.id"
+              >
+                <div class="detail-block">
+                  <h3>Query</h3>
+                  <p class="prose">{{ c.consultation_query }}</p>
+                </div>
+                <div class="detail-block">
+                  <h3>Report</h3>
+                  <p class="prose">{{ c.consultation_report }}</p>
+                </div>
+                <div class="detail-block">
+                  <h3>Notes</h3>
+                  <p class="prose">{{ c.consultation_notes }}</p>
+                </div>
+              </div>
+            }
+          </li>
+        } @empty {
+          <li class="empty">You have no consultations yet.</li>
+        }
+      </ul>
+    }
+  </div>
+</div>

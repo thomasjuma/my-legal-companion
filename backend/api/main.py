@@ -1,22 +1,37 @@
 from __future__ import annotations
 
+import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from database import configure, init_db
 
+import auth_routes
 import case_reference_routes
+import chat_routes
 import consultation_routes
 from errors import register_exception_handlers
+
+_log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    configure()
-    init_db()
+    # Repo-root `.env` in local dev; in App Runner / Docker only process env (e.g. DATABASE_URL) applies.
+    load_dotenv(
+        Path(__file__).resolve().parent.parent.parent / ".env", override=False
+    )
+    try:
+        configure()
+        init_db()
+    except Exception:
+        # Do not block startup: App Runner health checks need GET /health. Fix DB / env if APIs fail.
+        _log.exception("DB startup failed — check DATABASE_URL, Aurora SG, and network from App Runner")
     yield
 
 
@@ -31,7 +46,9 @@ def create_app() -> FastAPI:
     # Get origins from CORS_ORIGINS env var (comma-separated) or fall back to localhost
     cors_origins = [
         o.strip()
-        for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+        for o in os.getenv(
+            "CORS_ORIGINS", "http://localhost:3000,http://localhost:4200"
+        ).split(",")
         if o.strip()
     ]
     app.add_middleware(
@@ -41,8 +58,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.include_router(auth_routes.router)
     app.include_router(consultation_routes.router)
     app.include_router(case_reference_routes.router)
+    app.include_router(chat_routes.router)
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -53,12 +72,6 @@ def create_app() -> FastAPI:
 
 app = create_app()
 
-
-def main() -> None:
-    import uvicorn
-
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
-
-
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

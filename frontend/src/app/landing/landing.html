@@ -1,0 +1,23 @@
+<div class="landing">
+  <section class="hero" aria-labelledby="landing-title">
+    <h1 id="landing-title">Legal Companion</h1>
+    <p class="lede">
+      Connect consultations, case references, and the assistant in one place. Sign in to use the
+      app.
+    </p>
+    <div class="cta">
+      @if (clerk.isLoaded() && clerk.isSignedIn()) {
+        <a class="btn btn-primary" routerLink="/home">Open app</a>
+        <a class="btn btn-ghost" routerLink="/dashboard">Account</a>
+      } @else {
+        <a class="btn btn-primary" routerLink="/sign-up">Get started</a>
+        <a class="btn btn-ghost" routerLink="/sign-in">Sign in</a>
+      }
+    </div>
+  </section>
+  <ul class="bullets" aria-label="What you can do after signing in">
+    <li>Track consultations and link external references</li>
+    <li>Chat with the legal assistant backed by your API</li>
+    <li>Secure access with Clerk on every request</li>
+  </ul>
+</div>

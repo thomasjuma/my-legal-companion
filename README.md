@@ -45,13 +45,13 @@ graph TB
 ## Agent Responsibilities
 
 ### Legal Advisor
-**Role**:
+**Role**: This is the main orchestrator agent. This agent interacts with the user and decides the next action steps.
 
 ### Evaluator
-**Role**:
+**Role**: This agent acts as a judge to evaluate the output from the Advisor agent above.
 
 ### Writer
-**Role**:
+**Role**: The writer agent receives the output from the evalutor once the output has passed the judgement and generates a report that will be sent to the user.
 
 ### Researcher (Independent Agent)
 **Role**: Autonomously gather changes and new laws.

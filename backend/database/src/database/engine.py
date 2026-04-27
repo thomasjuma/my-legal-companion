@@ -26,6 +26,7 @@ def get_engine() -> Engine:
         return _engine
 
     url = get_database_url()
+    _log.info("Creating database engine for URL: %s", url)
     if url.startswith("sqlite"):
         connect_args: dict = {"check_same_thread": False} if ":memory:" in url else {}
         if ":memory:" in url:

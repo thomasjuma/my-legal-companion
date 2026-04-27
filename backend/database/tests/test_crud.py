@@ -57,6 +57,7 @@ def test_create_with_enum(db_session: Session) -> None:
     cr = get_crud(Consultation)
     row = cr.create(
         db_session,
+        clerk_user_id="test-user",
         consultation_type=ConsultationType.LEGAL,
         consultation_query="q",
         consultation_report="r",

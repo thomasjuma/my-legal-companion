@@ -1,15 +1,20 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from clerk_auth import clerk_bearer, get_clerk_user_id
 from database import get_crud, get_db
 from database.models import CaseReference, Consultation
 
 from http_messages import HTTP_404
 from schemas import CaseReferenceCreate, CaseReferenceRead
 
-router = APIRouter(prefix="/api/case-references", tags=["case_references"])
+router = APIRouter(
+    prefix="/api/case-references",
+    tags=["case_references"],
+    dependencies=[Depends(clerk_bearer)],
+)
 _case_ref_crud = get_crud(CaseReference)
 _consultation_crud = get_crud(Consultation)
 
@@ -20,6 +25,7 @@ _consultation_crud = get_crud(Consultation)
     status_code=status.HTTP_201_CREATED,
 )
 def create_case_reference(
+    request: Request,
     body: CaseReferenceCreate,
     session: Session = Depends(get_db),
 ) -> CaseReference:
@@ -28,6 +34,12 @@ def create_case_reference(
         if parent is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=HTTP_404
+            )
+        owner = get_clerk_user_id(request)
+        if parent.clerk_user_id != owner:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You may not link a case to another user's consultation.",
             )
     row = _case_ref_crud.create(session, data=body.model_dump())
     session.commit()
