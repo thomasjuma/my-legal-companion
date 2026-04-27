@@ -20,6 +20,27 @@ variable "clerk_issuer" {
   default     = ""
 }
 
+variable "aurora_cluster_arn" {
+  description = "Existing Aurora cluster ARN used by the API"
+  type        = string
+}
+
+variable "aurora_cluster_endpoint" {
+  description = "Existing Aurora writer endpoint used by the API"
+  type        = string
+}
+
+variable "aurora_secret_arn" {
+  description = "Secrets Manager secret ARN containing Aurora database credentials"
+  type        = string
+}
+
+variable "aurora_database_name" {
+  description = "Aurora database name used by the API"
+  type        = string
+  default     = "counsel"
+}
+
 variable "openai_api_key" {
   description = "OpenAI API key for the chat service (sensitive; prefer App Runner / Secrets in production)"
   type        = string

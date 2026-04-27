@@ -18,13 +18,6 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-data "terraform_remote_state" "database" {
-  backend = "local"
-  config = {
-    path = "../database/terraform.tfstate"
-  }
-}
-
 data "terraform_remote_state" "agents" {
   backend = "local"
   config = {
@@ -33,7 +26,7 @@ data "terraform_remote_state" "agents" {
 }
 
 data "aws_secretsmanager_secret_version" "aurora_db" {
-  secret_id = data.terraform_remote_state.database.outputs.aurora_secret_arn
+  secret_id = var.aurora_secret_arn
 }
 
 locals {
@@ -51,7 +44,7 @@ locals {
   )))
 
   db_creds     = jsondecode(data.aws_secretsmanager_secret_version.aurora_db.secret_string)
-  database_url = "postgresql+psycopg://${urlencode(local.db_creds.username)}:${urlencode(local.db_creds.password)}@${data.terraform_remote_state.database.outputs.aurora_cluster_endpoint}:5432/${data.terraform_remote_state.database.outputs.database_name}"
+  database_url = "postgresql+psycopg://${urlencode(local.db_creds.username)}:${urlencode(local.db_creds.password)}@${var.aurora_cluster_endpoint}:5432/${var.aurora_database_name}"
 }
 
 data "aws_vpc" "default" {
@@ -145,12 +138,12 @@ resource "aws_iam_role_policy" "apprunner_aurora" {
           "rds-data:CommitTransaction",
           "rds-data:RollbackTransaction"
         ]
-        Resource = data.terraform_remote_state.database.outputs.aurora_cluster_arn
+        Resource = var.aurora_cluster_arn
       },
       {
         Effect   = "Allow"
         Action   = ["secretsmanager:GetSecretValue"]
-        Resource = data.terraform_remote_state.database.outputs.aurora_secret_arn
+        Resource = var.aurora_secret_arn
       }
     ]
   })
@@ -197,10 +190,10 @@ resource "aws_apprunner_service" "api" {
         port = "8000"
         runtime_environment_variables = merge(
           {
-            AURORA_CLUSTER_ARN  = data.terraform_remote_state.database.outputs.aurora_cluster_arn
-            AURORA_SECRET_ARN   = data.terraform_remote_state.database.outputs.aurora_secret_arn
-            AURORA_DATABASE     = data.terraform_remote_state.database.outputs.database_name
-            AURORA_CLUSTER_HOST = data.terraform_remote_state.database.outputs.aurora_cluster_endpoint
+            AURORA_CLUSTER_ARN  = var.aurora_cluster_arn
+            AURORA_SECRET_ARN   = var.aurora_secret_arn
+            AURORA_DATABASE     = var.aurora_database_name
+            AURORA_CLUSTER_HOST = var.aurora_cluster_endpoint
             DATABASE_URL        = local.database_url
             DEFAULT_AWS_REGION  = var.aws_region
             SQS_QUEUE_URL       = data.terraform_remote_state.agents.outputs.sqs_queue_url
