@@ -3,10 +3,12 @@
     Legal Companion
   </a>
   <nav class="app-nav" aria-label="Main">
-    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"> Home </a>
-    <a routerLink="/consultations" routerLinkActive="active"> Consultations </a>
-    <a routerLink="/chat" routerLinkActive="active"> Chat </a>
-    <a routerLink="/dashboard" routerLinkActive="active"> Account </a>
+    @if (clerk.isLoaded() && clerk.isSignedIn()) {
+      <a routerLink="/home" routerLinkActive="active"> Home </a>
+      <a routerLink="/consultations" routerLinkActive="active"> Consultations </a>
+      <a routerLink="/chat" routerLinkActive="active"> Chat </a>
+      <a routerLink="/dashboard" routerLinkActive="active"> Account </a>
+    }
   </nav>
   <div class="app-auth" aria-label="Session">
     @if (clerk.isLoaded()) {

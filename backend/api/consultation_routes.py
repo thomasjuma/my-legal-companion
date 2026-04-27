@@ -3,12 +3,17 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from clerk_auth import clerk_bearer
 from database import get_crud, get_db
 from database.models import Consultation
 
 from schemas import ConsultationCreate, ConsultationRead
 
-router = APIRouter(prefix="/api/consultations", tags=["consultations"])
+router = APIRouter(
+    prefix="/api/consultations",
+    tags=["consultations"],
+    dependencies=[Depends(clerk_bearer)],
+)
 _consultation_crud = get_crud(Consultation)
 
 

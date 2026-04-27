@@ -12,7 +12,7 @@ export const environment = {
   clerkSignInPath: '/sign-in',
   /** Path where `<clerk-sign-up>` is hosted. */
   clerkSignUpPath: '/sign-up',
-  /** After successful sign-in / sign-up, navigate here unless the route guard set a return URL. */
-  afterSignInPath: '/dashboard',
-  afterSignUpPath: '/dashboard',
+  /** After successful sign-in / sign-up, unless the route guard set a return URL. */
+  afterSignInPath: '/home',
+  afterSignUpPath: '/home',
 } as const;

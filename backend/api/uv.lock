@@ -388,6 +388,20 @@ wheels = [
 ]
 
 [[package]]
+name = "fastapi-clerk-auth"
+version = "0.0.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "pyjwt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/86/af/410786fc25e52378df227f4d04e6b43b8c3bc9007221440822e9a10af051/fastapi_clerk_auth-0.0.9.tar.gz", hash = "sha256:503bdd3943e5f49095bd5dd04a8b14ebe6214bb3f39ae45df876e6275db5cf6d", size = 14359, upload-time = "2025-11-11T06:12:37.775Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/79/4e/058ecbe4fa0d470c3979f1272c0199cc47afb0ed935edb07b55441be8994/fastapi_clerk_auth-0.0.9-py3-none-any.whl", hash = "sha256:f9a47cfc65a2562c144a798ce0022a288799dac1149001b5a109865d578b2647", size = 6464, upload-time = "2025-11-11T06:12:35.655Z" },
+]
+
+[[package]]
 name = "fastuuid"
 version = "0.14.0"
 source = { registry = "https://pypi.org/simple" }
@@ -856,6 +870,7 @@ version = "0.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "fastapi-clerk-auth" },
     { name = "legal-companion-database" },
     { name = "openai-agents", extra = ["litellm"] },
     { name = "pydantic" },
@@ -866,6 +881,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "fastapi-clerk-auth", specifier = ">=0.0.9" },
     { name = "legal-companion-database", editable = "../database" },
     { name = "openai-agents", extras = ["litellm"], specifier = ">=0.14.0" },
     { name = "pydantic", specifier = ">=2.0.0" },

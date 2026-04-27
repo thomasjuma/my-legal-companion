@@ -5,6 +5,6 @@ export const environment = {
   PUBLISHABLE_KEY: '',
   clerkSignInPath: '/sign-in',
   clerkSignUpPath: '/sign-up',
-  afterSignInPath: '/dashboard',
-  afterSignUpPath: '/dashboard',
+  afterSignInPath: '/home',
+  afterSignUpPath: '/home',
 } as const;

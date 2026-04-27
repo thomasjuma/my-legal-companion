@@ -10,6 +10,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from database import configure, init_db
 
+import auth_routes
 import case_reference_routes
 import chat_routes
 import consultation_routes
@@ -38,7 +39,9 @@ def create_app() -> FastAPI:
     # Get origins from CORS_ORIGINS env var (comma-separated) or fall back to localhost
     cors_origins = [
         o.strip()
-        for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+        for o in os.getenv(
+            "CORS_ORIGINS", "http://localhost:3000,http://localhost:4200"
+        ).split(",")
         if o.strip()
     ]
     app.add_middleware(
@@ -48,6 +51,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.include_router(auth_routes.router)
     app.include_router(consultation_routes.router)
     app.include_router(case_reference_routes.router)
     app.include_router(chat_routes.router)

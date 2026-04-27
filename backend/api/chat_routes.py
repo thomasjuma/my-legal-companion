@@ -2,14 +2,19 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from chat_service import get_effective_model_name, run_chat
+from clerk_auth import clerk_bearer
 from schemas import ChatRequest, ChatResponse
 
 _log = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/chat", tags=["chat"])
+router = APIRouter(
+    prefix="/api/chat",
+    tags=["chat"],
+    dependencies=[Depends(clerk_bearer)],
+)
 
 
 @router.post(

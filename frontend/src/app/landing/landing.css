@@ -1,0 +1,84 @@
+:host {
+  display: block;
+  padding: 2.5rem 1.25rem 3rem;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.hero h1 {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.75rem;
+  color: #0f172a;
+}
+
+.lede {
+  margin: 0 0 1.5rem;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.75rem;
+  align-items: center;
+  margin-bottom: 2.25rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-primary {
+  color: #fff;
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background: #1e40af;
+  border-color: #1e40af;
+  outline: none;
+}
+
+.btn-ghost {
+  color: #1e3a5f;
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+.btn-ghost:hover,
+.btn-ghost:focus-visible {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  outline: none;
+}
+
+.bullets {
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+  color: #64748b;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.bullets li + li {
+  margin-top: 0.4rem;
+}
+
+.landing {
+  min-height: 50vh;
+}

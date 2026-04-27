@@ -1,8 +1,9 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideClerk } from 'ngx-clerk';
+import { clerkHttpInterceptor } from './core/clerk-auth.interceptor';
 import { environment } from '../environments/environment';
 import { App } from './app';
 import { routes } from './app.routes';
@@ -13,7 +14,7 @@ describe('App', () => {
       imports: [App],
       providers: [
         provideClerk({ publishableKey: environment.PUBLISHABLE_KEY }),
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([clerkHttpInterceptor])),
         provideHttpClientTesting(),
         provideRouter(routes),
       ],
