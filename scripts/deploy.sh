@@ -77,6 +77,20 @@ ecr_registry_host() {
   echo "${ecr_url%%/*}" | tr -d '[:space:]'
 }
 
+ensure_api_ecr_repository_state() {
+  local api_tf_dir="$1"
+  local repository_name="counsel-api"
+
+  if run_in_dir "$api_tf_dir" terraform state show aws_ecr_repository.api &>/dev/null; then
+    return
+  fi
+
+  if aws ecr describe-repositories --repository-names "$repository_name" &>/dev/null; then
+    echo "  ECR repository $repository_name already exists; importing into Terraform state…"
+    run_in_dir "$api_tf_dir" terraform import aws_ecr_repository.api "$repository_name"
+  fi
+}
+
 build_and_push_api_image() {
   echo ""
   echo "🐳 Building and pushing API image to ECR..."
@@ -92,6 +106,7 @@ build_and_push_api_image() {
   fi
 
   echo "  Ensuring ECR repository exists…"
+  ensure_api_ecr_repository_state "$api_tf_dir"
   run_in_dir "$api_tf_dir" terraform apply -auto-approve -target=aws_ecr_repository.api
 
   local ecr_url
