@@ -20,6 +20,44 @@
   background: #fff;
 }
 
+.app-auth {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+  margin-left: auto;
+}
+
+.auth-link {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: #52525b;
+  border-radius: 6px;
+  border: 1px solid #e4e4e7;
+  background: #fff;
+}
+
+.auth-link:hover,
+.auth-link:focus-visible {
+  color: #18181b;
+  background: #f4f4f5;
+  outline: none;
+}
+
+.auth-link-primary {
+  color: #fff;
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.auth-link-primary:hover,
+.auth-link-primary:focus-visible {
+  color: #fff;
+  background: #1e40af;
+  border-color: #1e40af;
+}
+
 .brand {
   font-weight: 700;
   font-size: 0.95rem;

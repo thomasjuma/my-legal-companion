@@ -1,8 +1,7 @@
 export const environment = {
-  production: true,
+  production: false,
   apiBaseUrl: '',
-  /** Injected in CI: use `pk_live_...` in production. */
-  PUBLISHABLE_KEY: '',
+  PUBLISHABLE_KEY: 'pk_test_fake_for_tests',
   clerkSignInPath: '/sign-in',
   clerkSignUpPath: '/sign-up',
   afterSignInPath: '/dashboard',

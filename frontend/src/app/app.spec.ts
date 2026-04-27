@@ -2,6 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideClerk } from 'ngx-clerk';
+import { environment } from '../environments/environment';
 import { App } from './app';
 import { routes } from './app.routes';
 
@@ -10,6 +12,7 @@ describe('App', () => {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
+        provideClerk({ publishableKey: environment.PUBLISHABLE_KEY }),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter(routes),
