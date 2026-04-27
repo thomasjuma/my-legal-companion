@@ -7,6 +7,11 @@ variable "aws_region" {
 variable "clerk_jwks_url" {
   description = "Clerk JWKS URL for JWT validation in the API (App Runner)"
   type        = string
+
+  validation {
+    condition     = can(regex("^https://.+/.well-known/jwks\\.json$", var.clerk_jwks_url))
+    error_message = "clerk_jwks_url must be a valid HTTPS Clerk JWKS URL ending in /.well-known/jwks.json."
+  }
 }
 
 variable "clerk_issuer" {
