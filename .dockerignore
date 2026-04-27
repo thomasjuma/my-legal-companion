@@ -1,0 +1,15 @@
+# Shrink `docker build -f backend/api/Dockerfile` context
+.git
+**/.venv
+**/__pycache__
+**/node_modules
+frontend
+terraform
+scripts
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+backend/api/api_lambda.zip
+**/.env
+**/.env.*
+*.md

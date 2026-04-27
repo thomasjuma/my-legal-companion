@@ -1,57 +1,46 @@
 output "cloudfront_url" {
-  description = "CloudFront distribution URL"
+  description = "CloudFront distribution URL (static site + /api to App Runner)"
   value       = "https://${aws_cloudfront_distribution.main.domain_name}"
 }
 
-output "api_gateway_url" {
-  description = "API Gateway URL"
-  value       = aws_apigatewayv2_api.main.api_endpoint
+output "apprunner_service_url" {
+  description = "Direct App Runner service URL (from api stack; prefer CloudFront /api in production)"
+  value       = try(data.terraform_remote_state.api.outputs.apprunner_service_url, "apply ../api first")
+}
+
+output "ecr_repository_url" {
+  description = "ECR image URI for the API (api stack; tag e.g. :latest)"
+  value       = try(data.terraform_remote_state.api.outputs.ecr_repository_url, "apply ../api first")
 }
 
 output "s3_bucket_name" {
-  description = "Name of the S3 bucket for frontend"
+  description = "Name of the S3 bucket for the frontend"
   value       = aws_s3_bucket.frontend.id
 }
 
-output "lambda_function_name" {
-  description = "Name of the API Lambda function"
-  value       = aws_lambda_function.api.function_name
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID (for cache invalidation)"
+  value       = aws_cloudfront_distribution.main.id
 }
 
 output "setup_instructions" {
-  description = "Instructions for completing the deployment"
-  value = <<-EOT
+  description = "Post-deploy notes"
+  value       = <<-EOT
 
-    ✅ Frontend & API infrastructure deployed successfully!
+    ✅ Frontend & App Runner API deployed (App Runner/ECR in ../api)
 
-    CloudFront URL: https://${aws_cloudfront_distribution.main.domain_name}
-    API Gateway: ${aws_apigatewayv2_api.main.api_endpoint}
-    S3 Bucket: ${aws_s3_bucket.frontend.id}
-    Lambda Function: ${aws_lambda_function.api.function_name}
+    Public site + API: https://${aws_cloudfront_distribution.main.domain_name} (paths /api/* → App Runner)
+    App Runner: ${try(data.terraform_remote_state.api.outputs.apprunner_service_url, "(not set — run terraform/apply in ../api)")}
+    S3: ${aws_s3_bucket.frontend.id}
+    ECR: ${try(data.terraform_remote_state.api.outputs.ecr_repository_url, "(not set — run apply in ../api)")}
 
-    Next steps:
+    1) Push a new image to ECR, tag `latest`, to redeploy the API (auto deploy if enabled on the service).
 
-    1. If you deployed manually (not using scripts/deploy.py):
-       a. Build and deploy the frontend (browser bundle is under dist/.../browser):
-          cd frontend
-          npm run build
-          aws s3 sync dist/my-legal-companion-ui/browser/ s3://${aws_s3_bucket.frontend.id}/ --delete
+    2) Invalidate CloudFront after frontend upload:
+         aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.main.id} --paths "/*"
 
-       b. Invalidate CloudFront cache:
-          aws cloudfront create-invalidation \
-            --distribution-id ${aws_cloudfront_distribution.main.id} \
-            --paths "/*"
+    3) Logs: AWS Console → App Runner → counsel-api → Logs
 
-    2. Test the deployment:
-       - Visit: https://${aws_cloudfront_distribution.main.domain_name}
-       - Sign in with Clerk
-       - Check API calls in Network tab
-
-    3. Monitor in AWS Console:
-       - CloudWatch Logs: /aws/lambda/${aws_lambda_function.api.function_name}
-       - API Gateway metrics
-       - CloudFront metrics
-
-    To destroy: cd scripts && uv run destroy.py
+    Destroy: from repo `scripts/uv run destroy.py` (or `terraform destroy` in this directory).
   EOT
 }

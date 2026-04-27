@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -16,15 +17,21 @@ import chat_routes
 import consultation_routes
 from errors import register_exception_handlers
 
+_log = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Repo-root `.env` (when the app is started from `backend/api`)
+    # Repo-root `.env` in local dev; in App Runner / Docker only process env (e.g. DATABASE_URL) applies.
     load_dotenv(
-        Path(__file__).resolve().parent.parent.parent / ".env", override=True
+        Path(__file__).resolve().parent.parent.parent / ".env", override=False
     )
-    configure()
-    init_db()
+    try:
+        configure()
+        init_db()
+    except Exception:
+        # Do not block startup: App Runner health checks need GET /health. Fix DB / env if APIs fail.
+        _log.exception("DB startup failed — check DATABASE_URL, Aurora SG, and network from App Runner")
     yield
 
 

@@ -102,33 +102,29 @@ def empty_s3_bucket(bucket_name):
 
 
 def destroy_terraform():
-    """Destroy infrastructure with Terraform."""
+    """Destroy frontend (S3 + CloudFront) first, then api (App Runner + ECR), so remote state is valid until CloudFront is gone."""
     print("\n🏗️  Destroying infrastructure with Terraform...")
 
-    terraform_dir = Path(__file__).parent.parent / "terraform" / "frontend"
+    repo = Path(__file__).parent.parent
+    fe_dir = repo / "terraform" / "frontend"
+    api_dir = repo / "terraform" / "api"
 
-    if not terraform_dir.exists():
-        print(f"  ❌ Terraform directory not found: {terraform_dir}")
-        return False
+    for name, d in (("frontend", fe_dir), ("api", api_dir)):
+        if not d.exists():
+            print(f"  ⚠️  Skipping {name}: directory not found: {d}")
+            continue
+        if not (d / ".terraform").exists():
+            print(f"  ⚠️  Skipping {name}: not initialized")
+            continue
+        print(f"  Running terraform destroy in {name}…")
+        print("  Type 'yes' when prompted to confirm destruction.")
+        if not run_command(["terraform", "destroy"], cwd=d):
+            print(f"  ❌ Failed to destroy {name}")
+            print("  You may need to manually clean up resources in AWS Console")
+            return False
+        print(f"  ✅ {name} stack destroyed")
 
-    # Check if Terraform is initialized
-    if not (terraform_dir / ".terraform").exists():
-        print("  ⚠️  Terraform not initialized, nothing to destroy")
-        return True
-
-    # Destroy the infrastructure
-    print("  Running terraform destroy...")
-    print("  Type 'yes' when prompted to confirm destruction.")
-
-    success = run_command(["terraform", "destroy"], cwd=terraform_dir)
-
-    if success:
-        print("  ✅ Infrastructure destroyed successfully")
-    else:
-        print("  ❌ Failed to destroy infrastructure")
-        print("  You may need to manually clean up resources in AWS Console")
-
-    return success
+    return True
 
 
 def clean_local_artifacts():

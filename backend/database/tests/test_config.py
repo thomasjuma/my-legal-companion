@@ -4,7 +4,8 @@ import pytest
 def test_get_database_url_uses_env(monkeypatch) -> None:
     from database import config
 
-    # ``load_dotenv(override=True)`` would clobber a test value with a project .env.
+    # ``load_dotenv(override=True)`` would clobber a test value with a project .env;
+    # we mock it so the explicit ``DATABASE_URL`` is used.
     monkeypatch.setattr(config, "load_dotenv", lambda *a, **k: None)
     monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:custom")
     from database import get_database_url
@@ -28,4 +29,4 @@ def test_get_database_url_empty_raises(monkeypatch) -> None:
 def test_configure_loads_no_crash() -> None:
     from database import configure
 
-    configure(override=True)
+    configure(override=False)

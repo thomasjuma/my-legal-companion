@@ -1,4 +1,4 @@
-# Legal Companion Frontend & API Infrastructure
+# S3 + CloudFront (static site, /api/* to App Runner from the ../api stack)
 
 terraform {
   required_version = ">= 1.0"
@@ -14,24 +14,13 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Data sources
+# App Runner (FastAPI) and ECR are defined in ../api; this stack only wires CloudFront to that origin.
 data "aws_caller_identity" "current" {}
 
-data "aws_region" "current" {}
-
-# Reference Database resources
-data "terraform_remote_state" "database" {
+data "terraform_remote_state" "api" {
   backend = "local"
   config = {
-    path = "../database/terraform.tfstate"
-  }
-}
-
-# Reference Agents resources
-data "terraform_remote_state" "agents" {
-  backend = "local"
-  config = {
-    path = "../agents/terraform.tfstate"
+    path = "../api/terraform.tfstate"
   }
 }
 
@@ -39,10 +28,14 @@ locals {
   name_prefix = "counsel"
 
   common_tags = {
-    Project     = "counsel"
-    Part        = "frontend"
-    ManagedBy   = "terraform"
+    Project   = "counsel"
+    Part      = "frontend"
+    ManagedBy = "terraform"
   }
+
+  # ../api may have no outputs yet (never applied) or empty state; avoid hard errors on plan/destroy.
+  _api_url = try(data.terraform_remote_state.api.outputs.apprunner_service_url, "")
+  apprunner_host = local._api_url == "" ? "not-deployed.example" : trimprefix(trimprefix(local._api_url, "https://"), "http://")
 }
 
 # S3 bucket for frontend static website
@@ -92,202 +85,6 @@ resource "aws_s3_bucket_policy" "frontend" {
   depends_on = [aws_s3_bucket_public_access_block.frontend]
 }
 
-# IAM role for Lambda API function
-resource "aws_iam_role" "api_lambda_role" {
-  name = "${local.name_prefix}-api-lambda-role"
-  tags = local.common_tags
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      },
-    ]
-  })
-}
-
-# Attach basic Lambda execution policy
-resource "aws_iam_role_policy_attachment" "api_lambda_basic" {
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-  role       = aws_iam_role.api_lambda_role.name
-}
-
-# Policy for Aurora Data API access
-resource "aws_iam_role_policy" "api_lambda_aurora" {
-  name = "${local.name_prefix}-api-lambda-aurora"
-  role = aws_iam_role.api_lambda_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "rds-data:ExecuteStatement",
-          "rds-data:BatchExecuteStatement",
-          "rds-data:BeginTransaction",
-          "rds-data:CommitTransaction",
-          "rds-data:RollbackTransaction"
-        ]
-        Resource = data.terraform_remote_state.database.outputs.aurora_cluster_arn
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue"
-        ]
-        Resource = data.terraform_remote_state.database.outputs.aurora_secret_arn
-      }
-    ]
-  })
-}
-
-# Policy for SQS access
-resource "aws_iam_role_policy" "api_lambda_sqs" {
-  name = "${local.name_prefix}-api-lambda-sqs"
-  role = aws_iam_role.api_lambda_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:SendMessage",
-          "sqs:GetQueueAttributes"
-        ]
-        Resource = data.terraform_remote_state.agents.outputs.sqs_queue_arn
-      }
-    ]
-  })
-}
-
-# Policy for Lambda invoke (for testing agents directly)
-resource "aws_iam_role_policy" "api_lambda_invoke" {
-  name = "${local.name_prefix}-api-lambda-invoke"
-  role = aws_iam_role.api_lambda_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = "lambda:InvokeFunction"
-        Resource = [
-          "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:counsel-planner",
-        ]
-      }
-    ]
-  })
-}
-
-# Lambda function for API
-resource "aws_lambda_function" "api" {
-  filename         = "${path.module}/../../backend/api/api_lambda.zip"
-  function_name    = "${local.name_prefix}-api"
-  role             = aws_iam_role.api_lambda_role.arn
-  handler          = "lambda_handler.handler"
-  source_code_hash = filebase64sha256("${path.module}/../../backend/api/api_lambda.zip")
-  runtime          = "python3.12"
-  architectures    = ["x86_64"]
-  timeout          = 30
-  memory_size      = 512
-  tags             = local.common_tags
-
-  environment {
-    variables = {
-      # Database configuration from Part 5
-      AURORA_CLUSTER_ARN = data.terraform_remote_state.database.outputs.aurora_cluster_arn
-      AURORA_SECRET_ARN  = data.terraform_remote_state.database.outputs.aurora_secret_arn
-      AURORA_DATABASE    = data.terraform_remote_state.database.outputs.database_name
-      DEFAULT_AWS_REGION = var.aws_region
-
-      # SQS configuration from Part 6
-      SQS_QUEUE_URL = data.terraform_remote_state.agents.outputs.sqs_queue_url
-
-      # Clerk configuration for JWT validation
-      CLERK_JWKS_URL = var.clerk_jwks_url
-      CLERK_ISSUER   = var.clerk_issuer
-
-      # CORS configuration (ng serve default port is 4200)
-      CORS_ORIGINS = "http://localhost:4200,https://${aws_cloudfront_distribution.main.domain_name}"
-    }
-  }
-
-  # Ensure Lambda waits for dependencies including CloudFront
-  depends_on = [
-    aws_iam_role_policy.api_lambda_aurora,
-    aws_iam_role_policy.api_lambda_sqs,
-    aws_iam_role_policy.api_lambda_invoke,
-    aws_cloudfront_distribution.main
-  ]
-}
-
-# API Gateway HTTP API
-resource "aws_apigatewayv2_api" "main" {
-  name          = "${local.name_prefix}-api-gateway"
-  protocol_type = "HTTP"
-  tags          = local.common_tags
-
-  cors_configuration {
-    allow_credentials = false  # Cannot be true when allow_origins is "*"
-    allow_headers     = ["authorization", "content-type", "x-amz-date", "x-api-key", "x-amz-security-token"]
-    allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_origins     = ["*"]  # CORS is handled in Lambda via environment variables
-    max_age           = 300
-  }
-}
-
-# No JWT authorizer needed - authentication is handled in Lambda like in the saas reference
-
-resource "aws_apigatewayv2_stage" "default" {
-  api_id      = aws_apigatewayv2_api.main.id
-  name        = "$default"
-  auto_deploy = true
-  tags        = local.common_tags
-
-  default_route_settings {
-    throttling_burst_limit = 100
-    throttling_rate_limit  = 100
-  }
-}
-
-resource "aws_apigatewayv2_integration" "lambda" {
-  api_id           = aws_apigatewayv2_api.main.id
-  integration_type = "AWS_PROXY"
-  integration_uri  = aws_lambda_function.api.invoke_arn
-}
-
-# API Gateway Routes - all routes under /api/*
-resource "aws_apigatewayv2_route" "api_any" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "ANY /api/{proxy+}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-
-  # No authorization at API Gateway level - handled in Lambda
-}
-
-# OPTIONS route for CORS preflight (no auth needed)
-resource "aws_apigatewayv2_route" "api_options" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "OPTIONS /api/{proxy+}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-}
-
-# Lambda permission for API Gateway
-resource "aws_lambda_permission" "api_gw" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.api.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
-}
-
 # CloudFront distribution
 resource "aws_cloudfront_distribution" "main" {
   enabled             = true
@@ -309,10 +106,10 @@ resource "aws_cloudfront_distribution" "main" {
     }
   }
 
-  # API Gateway origin for /api/* paths
+  # App Runner (FastAPI) for /api/* — service is managed in ../api
   origin {
-    domain_name = replace(aws_apigatewayv2_api.main.api_endpoint, "https://", "")
-    origin_id   = "API-Gateway"
+    domain_name = local.apprunner_host
+    origin_id   = "AppRunner-API"
 
     custom_origin_config {
       http_port              = 80
@@ -346,7 +143,7 @@ resource "aws_cloudfront_distribution" "main" {
     path_pattern     = "/api/*"
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "API-Gateway"
+    target_origin_id = "AppRunner-API"
 
     forwarded_values {
       query_string = true

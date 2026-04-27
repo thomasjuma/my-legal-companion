@@ -1,0 +1,14 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.env
+.env.*
+api_lambda.zip
+package_docker.py
+test_*.py
+.pytest_cache
+.coverage
+htmlcov

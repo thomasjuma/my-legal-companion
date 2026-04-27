@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
 Deploy the Legal Companion infrastructure.
-This script:
-1. Packages the Lambda function
-2. Deploys infrastructure with Terraform to get API URL
-3. Patches `frontend/src/environments/environment.production.ts` with the API base URL, then runs `ng build`
-4. Uploads the Angular browser bundle from `dist/.../browser` to S3
-5. Invalidates CloudFront cache
+1. Ensure ECR exists (terraform apply -target) and build/push the API Docker image to ECR
+2. Apply Terraform (App Runner, CloudFront, S3, …)
+3. Set `apiBaseUrl` in `environment.production.ts` (default `""` = same-origin `/api` on CloudFront) and `ng build`
+4. Sync the Angular browser bundle to S3 and invalidate CloudFront
 
-NOTE: `environment.production.ts` is overwritten for `apiBaseUrl` each deploy; commit other production
-secrets/keys to that file as needed, or set them in CI. Local `environment.ts` / `environment.development` are not modified.
+Set `openai_api_key` in `terraform/api/terraform.tfvars` (sensitive) for chat in App Runner, or add the key
+in the AWS App Runner console / Secrets Manager after deploy. Apply `terraform/api` before `terraform/frontend`.
 """
 
 import re
@@ -46,7 +44,7 @@ def check_prerequisites():
 
     # Check for required tools
     tools = {
-        "docker": "Docker is required for Lambda packaging",
+        "docker": "Docker is required to build the API image",
         "terraform": "Terraform is required for infrastructure deployment",
         "npm": "npm is required for building the frontend",
         "aws": "AWS CLI is required for S3 sync and CloudFront invalidation"
@@ -77,27 +75,77 @@ def check_prerequisites():
         sys.exit(1)
 
 
-def package_lambda():
-    """Package the Lambda function using Docker."""
-    print("\n📦 Packaging Lambda function...")
+def _ecr_registry_host(ecr_repo_url: str) -> str:
+    return ecr_repo_url.split("/")[0].strip()
 
-    api_dir = Path(__file__).parent.parent / "backend" / "api"
 
-    if not api_dir.exists():
-        print(f"  ❌ API directory not found: {api_dir}")
+def build_and_push_api_image():
+    """Create ECR repo in AWS, build the API image, and push :latest (App Runner auto-deploys)."""
+    print("\n🐳 Building and pushing API image to ECR...")
+
+    root = Path(__file__).parent.parent
+    api_tf_dir = root / "terraform" / "api"
+    if not (root / "backend" / "api" / "Dockerfile").exists():
+        print("  ❌ backend/api/Dockerfile not found")
         sys.exit(1)
 
-    # Run the packaging script
-    run_command(["uv", "run", "package_docker.py"], cwd=api_dir)
+    if not (api_tf_dir / ".terraform").exists():
+        run_command(["terraform", "init"], cwd=api_tf_dir)
 
-    # Verify the package was created
-    lambda_zip = api_dir / "api_lambda.zip"
-    if not lambda_zip.exists():
-        print(f"  ❌ Lambda package not created: {lambda_zip}")
+    print("  Ensuring ECR repository exists…")
+    run_command(
+        [
+            "terraform",
+            "apply",
+            "-auto-approve",
+            "-target=aws_ecr_repository.api",
+        ],
+        cwd=api_tf_dir,
+    )
+
+    ecr_url = run_command(
+        ["terraform", "output", "-raw", "ecr_repository_url"],
+        cwd=api_tf_dir,
+        capture_output=True,
+    )
+    reg = _ecr_registry_host(ecr_url)
+    local_tag = "counsel-api:latest"
+    remote = f"{ecr_url}:latest"
+
+    run_command(
+        [
+            "docker",
+            "build",
+            "-f",
+            "backend/api/Dockerfile",
+            "-t",
+            local_tag,
+            ".",
+        ],
+        cwd=root,
+    )
+    run_command(["docker", "tag", local_tag, remote], cwd=root)
+
+    print("  Logging in to ECR and pushing…")
+    region = (
+        run_command(["aws", "configure", "get", "region"], capture_output=True)
+        or os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+    )
+    login_pw = run_command(
+        ["aws", "ecr", "get-login-password", "--region", region],
+        capture_output=True,
+    )
+    p = subprocess.run(
+        ["docker", "login", "--username", "AWS", "--password-stdin", reg],
+        input=login_pw,
+        text=True,
+        capture_output=True,
+    )
+    if p.returncode != 0:
+        print(p.stderr or p.stdout, file=sys.stderr)
         sys.exit(1)
-
-    size_mb = lambda_zip.stat().st_size / (1024 * 1024)
-    print(f"  ✅ Lambda package created: {lambda_zip} ({size_mb:.2f} MB)")
+    run_command(["docker", "push", remote], cwd=root)
+    print(f"  ✅ Pushed {remote}")
 
 
 def _angular_browser_out_dir(frontend_dir: Path) -> Path:
@@ -131,8 +179,8 @@ def patch_angular_production_api_url(frontend_dir: Path, api_url: str) -> None:
     print(f"  ✅ Set apiBaseUrl in environment.production.ts: {api_url}")
 
 
-def build_frontend(api_url=None):
-    """Build the Angular frontend (production configuration)."""
+def build_frontend(api_url: str = ""):
+    """Build the Angular frontend (production configuration). `apiBaseUrl` same-origin is ``""`` when the API is behind CloudFront /api/*."""
     print("\n🎨 Building frontend...")
 
     frontend_dir = Path(__file__).parent.parent / "frontend"
@@ -147,8 +195,7 @@ def build_frontend(api_url=None):
         print("  Installing dependencies...")
         run_command(["npm", "install"], cwd=frontend_dir)
 
-    if api_url:
-        patch_angular_production_api_url(frontend_dir, api_url)
+    patch_angular_production_api_url(frontend_dir, api_url)
 
     build_env = os.environ.copy()
     build_env["NODE_ENV"] = "production"
@@ -169,38 +216,41 @@ def build_frontend(api_url=None):
 
 
 def deploy_terraform():
-    """Deploy infrastructure with Terraform."""
+    """Apply terraform/api (App Runner + ECR) then terraform/frontend (S3 + CloudFront)."""
     print("\n🏗️  Deploying infrastructure with Terraform...")
 
-    terraform_dir = Path(__file__).parent.parent / "terraform" / "frontend"
+    repo = Path(__file__).parent.parent
+    api_dir = repo / "terraform" / "api"
+    fe_dir = repo / "terraform" / "frontend"
 
-    if not terraform_dir.exists():
-        print(f"  ❌ Terraform directory not found: {terraform_dir}")
-        sys.exit(1)
+    for d in (api_dir, fe_dir):
+        if not d.exists():
+            print(f"  ❌ Terraform directory not found: {d}")
+            sys.exit(1)
 
-    # Initialize Terraform if needed
-    if not (terraform_dir / ".terraform").exists():
-        print("  Initializing Terraform...")
-        run_command(["terraform", "init"], cwd=terraform_dir)
+    for d in (api_dir, fe_dir):
+        if not (d / ".terraform").exists():
+            print(f"  Initializing Terraform in {d.name}…")
+            run_command(["terraform", "init"], cwd=d)
 
-    # Plan the deployment
-    print("  Planning deployment...")
-    run_command(["terraform", "plan"], cwd=terraform_dir)
+    print("  Planning api…")
+    run_command(["terraform", "plan"], cwd=api_dir)
+    print("\n  Applying api (App Runner, ECR, IAM)…")
+    run_command(["terraform", "apply", "-auto-approve"], cwd=api_dir)
 
-    # Apply the deployment
-    print("\n  Applying deployment...")
-    print("  Creating AWS resources...")
-    run_command(["terraform", "apply", "-auto-approve"], cwd=terraform_dir)
+    print("\n  Planning frontend…")
+    run_command(["terraform", "plan"], cwd=fe_dir)
+    print("\n  Applying frontend (S3, CloudFront)…")
+    run_command(["terraform", "apply", "-auto-approve"], cwd=fe_dir)
 
-    # Get outputs
-    print("\n  Getting outputs...")
-    outputs = run_command(
-        ["terraform", "output", "-json"],
-        cwd=terraform_dir,
-        capture_output=True
+    print("\n  Getting outputs (frontend, includes remote api URLs)…")
+    return json.loads(
+        run_command(
+            ["terraform", "output", "-json"],
+            cwd=fe_dir,
+            capture_output=True,
+        )
     )
-
-    return json.loads(outputs)
 
 
 def upload_frontend(bucket_name, cloudfront_id):
@@ -319,15 +369,16 @@ def display_deployment_info(outputs):
     """Display deployment information without modifying local env files."""
     print("\n📝 Deployment Information")
 
-    # Extract values from outputs
-    api_url = outputs["api_gateway_url"]["value"]
     cloudfront_url = outputs["cloudfront_url"]["value"]
+    ar = outputs.get("apprunner_service_url")
+    appr = (ar or {}).get("value", "")
 
     print(f"\n  ✅ Deployment successful!")
-    print(f"\n  CloudFront URL: {cloudfront_url}")
-    print(f"  API Gateway URL: {api_url}")
+    print(f"\n  CloudFront (site + /api/*): {cloudfront_url}")
+    if appr:
+        print(f"  App Runner (direct): {appr}")
     print(f"\n  Note: `src/environments/environment.ts` for local dev is unchanged.")
-    print("  The deploy set `apiBaseUrl` in environment.production.ts for this build.")
+    print("  Production build uses `apiBaseUrl` '' for same-origin /api on CloudFront.")
 
 
 def main():
@@ -338,40 +389,21 @@ def main():
     # Check prerequisites
     check_prerequisites()
 
-    # Package Lambda
-    package_lambda()
+    build_and_push_api_image()
 
-    # Deploy infrastructure first to get the API URL
+    # Full Terraform (App Runner, CloudFront, S3, …)
     outputs = deploy_terraform()
 
-    # Get the API URL from terraform outputs
-    api_url = outputs["api_gateway_url"]["value"]
+    # Same-origin API on CloudFront: leave apiBaseUrl empty
+    build_frontend("")
 
-    # Build frontend with the production API URL
-    build_frontend(api_url)
-
-    # Extract CloudFront distribution ID
-    cloudfront_url = outputs["cloudfront_url"]["value"]
-    # Extract distribution ID from CloudFront URL
-    dist_id_output = run_command([
-        "aws", "cloudfront", "list-distributions",
-        "--query", f"DistributionList.Items[?DomainName=='{cloudfront_url.replace('https://', '')}'].Id",
-        "--output", "text"
-    ], capture_output=True)
-
-    if not dist_id_output:
-        print("  ⚠️  Could not find CloudFront distribution ID")
-        print("  You'll need to manually invalidate the cache")
-        cloudfront_id = None
-    else:
-        cloudfront_id = dist_id_output
-
-    # Upload frontend
     bucket_name = outputs["s3_bucket_name"]["value"]
-    if cloudfront_id:
-        upload_frontend(bucket_name, cloudfront_id)
+    dist_o = outputs.get("cloudfront_distribution_id")
+    dist_id = (dist_o or {}).get("value")
+    if dist_id:
+        upload_frontend(bucket_name, dist_id)
     else:
-        print("\n📤 Uploading frontend to S3...")
+        print("\n📤 Uploading frontend to S3 (no distribution id in outputs)…")
         run_command([
             "aws", "s3", "sync",
             str(_angular_browser_out_dir(Path(__file__).parent.parent / "frontend")) + "/",
@@ -386,8 +418,9 @@ def main():
     print("✅ Deployment complete!")
     print(f"\n🌐 Your application is available at:")
     print(f"   {outputs['cloudfront_url']['value']}")
-    print(f"\n📊 Monitor your Lambda function at:")
-    print(f"   AWS Console > Lambda > {outputs['lambda_function_name']['value']}")
+    ap = outputs.get("apprunner_service_url")
+    apu = (ap or {}).get("value", "counsel-api")
+    print(f"\n📊 Monitor the API: AWS Console → App Runner (URL: {apu})")
     print("\n⏳ Note: CloudFront distribution may take 5-10 minutes to fully propagate")
 
 

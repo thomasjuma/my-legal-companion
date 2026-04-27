@@ -1,0 +1,10 @@
+# Part: API (App Runner) — same Clerk/OpenAI/cors as frontend if you share one tfvars copy.
+
+aws_region = "us-east-1"
+
+clerk_jwks_url = "https://YOUR-INSTANCE.clerk.accounts.dev/.well-known/jwks.json"
+clerk_issuer   = "https://YOUR-INSTANCE.clerk.accounts.dev"
+
+# openai_api_key = "sk-..."
+
+# cors_extra_origins = ["https://YOUR_CLOUDFRONT_URL.cloudfront.net"]

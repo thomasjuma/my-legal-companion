@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from clerk_auth import clerk_bearer
+from clerk_auth import clerk_bearer, get_clerk_user_id
 from database import get_crud, get_db
 from database.models import CaseReference, Consultation
 
