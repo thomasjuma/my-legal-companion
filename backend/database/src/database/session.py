@@ -51,10 +51,14 @@ def get_db() -> Generator[Session, None, None]:
     """
     FastAPI dependency: yield a :class:`sqlalchemy.orm.Session` and close it when
     the request ends. Call ``commit()`` in the route (or a service) when
-    persisting data.
+    persisting data. Rolls back the session when the route or dependency raises
+    (after which application exception handlers can build the response).
     """
     session = get_session_maker()()
     try:
         yield session
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
