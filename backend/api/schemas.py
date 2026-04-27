@@ -1,10 +1,37 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from database.models import ConsultationType
+
+
+class ChatMessage(BaseModel):
+    role: Literal["system", "user", "assistant"] = "user"
+    content: str = Field(..., min_length=1, max_length=32_000)
+
+
+class ChatRequest(BaseModel):
+    """Chat turns in order (e.g. system, then user/assistant alternation)."""
+
+    messages: list[ChatMessage] = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+    )
+    max_turns: int | None = Field(
+        default=None,
+        ge=1,
+        le=50,
+        description="Override agent run max turns (default from CHAT_MAX_TURNS or 5).",
+    )
+
+
+class ChatResponse(BaseModel):
+    message: str
+    model: str
 
 
 class ConsultationCreate(BaseModel):
