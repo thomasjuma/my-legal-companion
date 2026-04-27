@@ -77,18 +77,113 @@ ecr_registry_host() {
   echo "${ecr_url%%/*}" | tr -d '[:space:]'
 }
 
-ensure_api_ecr_repository_state() {
-  local api_tf_dir="$1"
-  local repository_name="counsel-api"
+terraform_state_has() {
+  local tf_dir="$1"
+  local address="$2"
 
-  if run_in_dir "$api_tf_dir" terraform state show aws_ecr_repository.api &>/dev/null; then
+  run_in_dir "$tf_dir" terraform state show "$address" &>/dev/null
+}
+
+terraform_import_if_missing() {
+  local tf_dir="$1"
+  local address="$2"
+  local import_id="$3"
+  local label="$4"
+
+  if [[ -z "$import_id" || "$import_id" == "None" ]]; then
     return
   fi
 
-  if aws ecr describe-repositories --repository-names "$repository_name" &>/dev/null; then
-    echo "  ECR repository $repository_name already exists; importing into Terraform state…"
-    run_in_dir "$api_tf_dir" terraform import aws_ecr_repository.api "$repository_name"
+  if terraform_state_has "$tf_dir" "$address"; then
+    return
   fi
+
+  echo "  $label already exists; importing into Terraform state…"
+  run_in_dir "$tf_dir" terraform import "$address" "$import_id"
+}
+
+ensure_api_existing_resource_state() {
+  local api_tf_dir="$1"
+  local repository_name="counsel-api"
+  local sg_name="counsel-apprunner-connector"
+  local ecr_access_role="counsel-apprunner-ecr-access"
+  local instance_role="counsel-apprunner-instance"
+
+  if aws ecr describe-repositories --repository-names "$repository_name" &>/dev/null; then
+    terraform_import_if_missing "$api_tf_dir" aws_ecr_repository.api "$repository_name" "ECR repository $repository_name"
+  fi
+
+  local vpc_id
+  vpc_id=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text 2>/dev/null || true)
+  if [[ -n "$vpc_id" && "$vpc_id" != "None" ]]; then
+    local sg_id
+    sg_id=$(
+      aws ec2 describe-security-groups \
+        --filters "Name=vpc-id,Values=$vpc_id" "Name=group-name,Values=$sg_name" \
+        --query 'SecurityGroups[0].GroupId' \
+        --output text 2>/dev/null || true
+    )
+    terraform_import_if_missing "$api_tf_dir" aws_security_group.apprunner_vpc_connector "$sg_id" "Security group $sg_name"
+  fi
+
+  if aws iam get-role --role-name "$ecr_access_role" &>/dev/null; then
+    terraform_import_if_missing "$api_tf_dir" aws_iam_role.apprunner_ecr_access "$ecr_access_role" "IAM role $ecr_access_role"
+
+    local ecr_access_policy_arn="arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+    local attached_ecr_policy
+    attached_ecr_policy=$(
+      aws iam list-attached-role-policies \
+        --role-name "$ecr_access_role" \
+        --query "AttachedPolicies[?PolicyArn=='$ecr_access_policy_arn'].PolicyArn | [0]" \
+        --output text 2>/dev/null || true
+    )
+    if [[ "$attached_ecr_policy" == "$ecr_access_policy_arn" ]]; then
+      terraform_import_if_missing \
+        "$api_tf_dir" \
+        aws_iam_role_policy_attachment.apprunner_ecr \
+        "$ecr_access_role/$ecr_access_policy_arn" \
+        "IAM policy attachment for $ecr_access_role"
+    fi
+  fi
+
+  if aws iam get-role --role-name "$instance_role" &>/dev/null; then
+    terraform_import_if_missing "$api_tf_dir" aws_iam_role.apprunner_instance "$instance_role" "IAM role $instance_role"
+
+    if aws iam get-role-policy --role-name "$instance_role" --policy-name counsel-apprunner-aurora &>/dev/null; then
+      terraform_import_if_missing "$api_tf_dir" aws_iam_role_policy.apprunner_aurora "$instance_role:counsel-apprunner-aurora" "IAM inline policy counsel-apprunner-aurora"
+    fi
+    if aws iam get-role-policy --role-name "$instance_role" --policy-name counsel-apprunner-sqs &>/dev/null; then
+      terraform_import_if_missing "$api_tf_dir" aws_iam_role_policy.apprunner_sqs "$instance_role:counsel-apprunner-sqs" "IAM inline policy counsel-apprunner-sqs"
+    fi
+    if aws iam get-role-policy --role-name "$instance_role" --policy-name counsel-apprunner-invoke &>/dev/null; then
+      terraform_import_if_missing "$api_tf_dir" aws_iam_role_policy.apprunner_invoke "$instance_role:counsel-apprunner-invoke" "IAM inline policy counsel-apprunner-invoke"
+    fi
+  fi
+
+  local vpc_connector_arn
+  vpc_connector_arn=$(
+    aws apprunner list-vpc-connectors \
+      --query "VpcConnectors[?VpcConnectorName=='counsel-api-vpc'].VpcConnectorArn | [0]" \
+      --output text 2>/dev/null || true
+  )
+  terraform_import_if_missing "$api_tf_dir" aws_apprunner_vpc_connector.api "$vpc_connector_arn" "App Runner VPC connector counsel-api-vpc"
+
+  local service_arn
+  service_arn=$(
+    aws apprunner list-services \
+      --query "ServiceSummaryList[?ServiceName=='counsel-api'].ServiceArn | [0]" \
+      --output text 2>/dev/null || true
+  )
+  terraform_import_if_missing "$api_tf_dir" aws_apprunner_service.api "$service_arn" "App Runner service counsel-api"
+}
+
+ensure_agents_existing_resource_state() {
+  local agents_tf_dir="$1"
+  local queue_name="counsel-agents"
+  local queue_url
+
+  queue_url=$(aws sqs get-queue-url --queue-name "$queue_name" --query QueueUrl --output text 2>/dev/null || true)
+  terraform_import_if_missing "$agents_tf_dir" aws_sqs_queue.agents "$queue_url" "SQS queue $queue_name"
 }
 
 build_and_push_api_image() {
@@ -106,7 +201,7 @@ build_and_push_api_image() {
   fi
 
   echo "  Ensuring ECR repository exists…"
-  ensure_api_ecr_repository_state "$api_tf_dir"
+  ensure_api_existing_resource_state "$api_tf_dir"
   run_in_dir "$api_tf_dir" terraform apply -auto-approve -target=aws_ecr_repository.api
 
   local ecr_url
@@ -231,6 +326,7 @@ deploy_prerequisite_terraform() {
 
   echo ""
   echo "  Planning agents…"
+  ensure_agents_existing_resource_state "$agents_dir"
   run_in_dir "$agents_dir" terraform plan
   echo ""
   echo "  Applying agents (SQS)…"
@@ -259,6 +355,7 @@ deploy_terraform() {
   done
 
   echo "  Planning api…"
+  ensure_api_existing_resource_state "$api_dir"
   run_in_dir "$api_dir" terraform plan
   echo ""
   echo "  Applying api (App Runner, ECR, IAM)…"
