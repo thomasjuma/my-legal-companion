@@ -16,6 +16,10 @@ readonly ANGULAR_PROJECT="my-legal-companion-ui"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly ROOT
 
+if [[ -n "${DEFAULT_AWS_REGION:-}" && -z "${TF_VAR_aws_region:-}" ]]; then
+  export TF_VAR_aws_region="$DEFAULT_AWS_REGION"
+fi
+
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
@@ -194,6 +198,41 @@ run_in_dir() {
   (cd "$d" && "$@")
 }
 
+deploy_prerequisite_terraform() {
+  echo ""
+  echo "🏗️  Deploying prerequisite infrastructure with Terraform..."
+
+  local database_dir="$ROOT/terraform/database"
+  local agents_dir="$ROOT/terraform/agents"
+
+  for d in "$database_dir" "$agents_dir"; do
+    if [[ ! -d "$d" ]]; then
+      echo "  ❌ Terraform directory not found: $d"
+      exit 1
+    fi
+  done
+
+  for d in "$database_dir" "$agents_dir"; do
+    if [[ ! -d "$d/.terraform" ]]; then
+      echo "  Initializing Terraform in $(basename "$d")…"
+      run_in_dir "$d" terraform init
+    fi
+  done
+
+  echo "  Planning database…"
+  run_in_dir "$database_dir" terraform plan
+  echo ""
+  echo "  Applying database (Aurora, Secrets Manager, IAM)…"
+  run_in_dir "$database_dir" terraform apply -auto-approve
+
+  echo ""
+  echo "  Planning agents…"
+  run_in_dir "$agents_dir" terraform plan
+  echo ""
+  echo "  Applying agents (SQS)…"
+  run_in_dir "$agents_dir" terraform apply -auto-approve
+}
+
 deploy_terraform() {
   echo ""
   echo "🏗️  Deploying infrastructure with Terraform..."
@@ -329,6 +368,7 @@ main() {
 
   check_prerequisites
 
+  deploy_prerequisite_terraform
   build_and_push_api_image
   deploy_terraform
 
