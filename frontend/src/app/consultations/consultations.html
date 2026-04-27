@@ -1,144 +1,82 @@
 <div class="page">
   <header class="page-head">
-    <h1>Consultations</h1>
+    <h1>Your consultations</h1>
     <p class="lede">
-      Create and review legal consultation records. Data is stored via the
-      <code>/api/consultations</code> API.
+      Consultation records for your account, newest first.
     </p>
   </header>
 
   @if (loadError()) {
     <p class="banner err" role="alert">{{ loadError() }}</p>
   }
-  @if (formError()) {
-    <p class="banner err" role="alert">{{ formError() }}</p>
-  }
 
   <div class="layout">
-    <section class="card form-card" aria-labelledby="new-h">
-      <h2 id="new-h">New consultation</h2>
-      <form (ngSubmit)="submitNew()" class="form">
-        <label>
-          <span>Type</span>
-          <select
-            name="ctype"
-            [(ngModel)]="newConsultation.consultation_type"
-            [disabled]="busy()"
-            required
-          >
-            @for (t of typeOptions; track t) {
-              <option [ngValue]="t">{{ t }}</option>
-            }
-          </select>
-        </label>
-        <label>
-          <span>Query</span>
-          <textarea
-            name="q"
-            rows="3"
-            [(ngModel)]="newConsultation.consultation_query"
-            [disabled]="busy()"
-            required
-            placeholder="What is being asked?"
-          ></textarea>
-        </label>
-        <label>
-          <span>Report</span>
-          <textarea
-            name="r"
-            rows="4"
-            [(ngModel)]="newConsultation.consultation_report"
-            [disabled]="busy()"
-            required
-            placeholder="Findings and recommendations"
-          ></textarea>
-        </label>
-        <label>
-          <span>Notes</span>
-          <textarea
-            name="n"
-            rows="2"
-            [(ngModel)]="newConsultation.consultation_notes"
-            [disabled]="busy()"
-            required
-            placeholder="Internal notes (optional content allowed)"
-          ></textarea>
-        </label>
-        <div class="form-actions">
-          <button type="submit" [disabled]="busy()">
-            @if (busy()) {
-              Saving…
-            } @else {
-              Save consultation
-            }
-          </button>
-        </div>
-      </form>
-    </section>
-
-    <div class="stack">
-      <div class="toolbar">
-        <h2 id="list-h">All consultations</h2>
-        <button type="button" class="ghost" (click)="reload()" [disabled]="listLoading()">
-          @if (listLoading()) {
-            Loading…
-          } @else {
-            Refresh
-          }
-        </button>
-      </div>
-
-      @if (listLoading() && !rows().length) {
-        <p class="muted" aria-live="polite">Loading list…</p>
-      } @else {
-        <ul class="ledger" role="list" aria-labelledby="list-h">
-          @for (c of rows(); track c.id) {
-            <li>
-              <button
-                type="button"
-                class="row"
-                [class.open]="selected()?.id === c.id"
-                (click)="select(c)"
-                [attr.aria-expanded]="selected()?.id === c.id"
-                [attr.aria-controls]="'detail-' + c.id"
-                id="row-{{ c.id }}"
-              >
-                <span class="row-top">
-                  <span class="id">#{{ c.id }}</span>
-                  <span class="badge-type">{{ c.consultation_type }}</span>
-                </span>
-                <span class="preview">{{ c.consultation_query }}</span>
-                <time class="row-time" [dateTime]="c.created_at">
-                  {{ c.created_at | date: 'medium' }}
-                </time>
-              </button>
-              @if (selected()?.id === c.id) {
-                <div
-                  class="detail"
-                  [attr.id]="'detail-' + c.id"
-                  role="region"
-                  [attr.aria-labelledby]="'row-' + c.id"
-                >
-                  <div class="detail-block">
-                    <h3>Query</h3>
-                    <p class="prose">{{ c.consultation_query }}</p>
-                  </div>
-                  <div class="detail-block">
-                    <h3>Report</h3>
-                    <p class="prose">{{ c.consultation_report }}</p>
-                  </div>
-                  <div class="detail-block">
-                    <h3>Notes</h3>
-                    <p class="prose">{{ c.consultation_notes }}</p>
-                  </div>
-                </div>
-              }
-            </li>
-          } @empty {
-            <li class="empty">No consultations yet. Add one with the form.</li>
-          }
-        </ul>
-      }
+    <div class="toolbar">
+      <h2 id="list-h">History</h2>
+      <button
+        type="button"
+        class="ghost"
+        (click)="reload()"
+        [disabled]="listLoading()"
+      >
+        @if (listLoading()) {
+          Loading…
+        } @else {
+          Refresh
+        }
+      </button>
     </div>
+
+    @if (listLoading() && !rows().length) {
+      <p class="muted" aria-live="polite">Loading list…</p>
+    } @else {
+      <ul class="ledger" role="list" aria-labelledby="list-h">
+        @for (c of rows(); track c.id) {
+          <li>
+            <button
+              type="button"
+              class="row"
+              [class.open]="selected()?.id === c.id"
+              (click)="select(c)"
+              [attr.aria-expanded]="selected()?.id === c.id"
+              [attr.aria-controls]="'detail-' + c.id"
+              id="row-{{ c.id }}"
+            >
+              <span class="row-top">
+                <span class="id">#{{ c.id }}</span>
+                <span class="badge-type">{{ c.consultation_type }}</span>
+              </span>
+              <span class="preview">{{ c.consultation_query }}</span>
+              <time class="row-time" [dateTime]="c.created_at">
+                {{ c.created_at | date: 'medium' }}
+              </time>
+            </button>
+            @if (selected()?.id === c.id) {
+              <div
+                class="detail"
+                [attr.id]="'detail-' + c.id"
+                role="region"
+                [attr.aria-labelledby]="'row-' + c.id"
+              >
+                <div class="detail-block">
+                  <h3>Query</h3>
+                  <p class="prose">{{ c.consultation_query }}</p>
+                </div>
+                <div class="detail-block">
+                  <h3>Report</h3>
+                  <p class="prose">{{ c.consultation_report }}</p>
+                </div>
+                <div class="detail-block">
+                  <h3>Notes</h3>
+                  <p class="prose">{{ c.consultation_notes }}</p>
+                </div>
+              </div>
+            }
+          </li>
+        } @empty {
+          <li class="empty">You have no consultations yet.</li>
+        }
+      </ul>
+    }
   </div>
 </div>

@@ -39,14 +39,17 @@ def create_consultation(
 
 @router.get("", response_model=list[ConsultationRead])
 def list_consultations(
+    request: Request,
     session: Session = Depends(get_db),
     offset: int = 0,
     limit: int = 100,
 ) -> list[Consultation]:
+    sub = get_clerk_user_id(request)
     return _consultation_crud.get_many(
         session,
         offset=offset,
         limit=limit,
         order_by="created_at",
         descending=True,
+        clerk_user_id=sub,
     )

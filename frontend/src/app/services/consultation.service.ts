@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { apiPath } from '../core/api-path';
-import { Consultation, ConsultationCreate } from '../models/api.models';
+import { Consultation } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class ConsultationService {
@@ -14,9 +14,5 @@ export class ConsultationService {
     return this.http.get<Consultation[]>(apiPath('/api/consultations'), {
       params,
     });
-  }
-
-  create(body: ConsultationCreate) {
-    return this.http.post<Consultation>(apiPath('/api/consultations'), body);
   }
 }

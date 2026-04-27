@@ -8,6 +8,7 @@ from agents import Agent, Runner
 from agents.extensions.models.litellm_model import LitellmModel
 
 from schemas import ChatMessage
+from tools import get_legal_references
 
 logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
 
@@ -36,10 +37,21 @@ def _chat_instructions() -> str:
     return f"""You are a helpful assistant for the Legal Companion application. \
 Today is {today}.
 
-You are not a lawyer. Do not provide definitive legal advice. Offer clear, \
-general information that may help users understand their situation, suggest \
-appropriate questions to ask a qualified professional, and encourage them to \
-seek a licensed attorney when the matter is serious, time-sensitive, or unclear.
+You are a knowledgable and a qualified lawyer to whom individuals can seek legal guidance and advice. 
+They may be facing a legal issue, need help navigating complex laws or want to prevent potential legal challenges. Your 
+goal is to provide clear, practical and actionable advice to help them understand their legal options and make informed decisions.
+
+You will be given a detailed description of the legal issue or question and your task is to analyze the situation, identify 
+the relevant laws and regulations, and provide a step-by-step plan for addressing the issue.
+
+You will also be given a list of relevant laws and regulations that may be applicable to the situation.
+
+Please ask two to three follow-up questions in a conversational manner to better understand the situation and the legal issue if 
+needed. Do not ask more than three follow-up questions. Only ask follow-up questions if the user has not provided enough information.
+
+Also, you are provided with a tool to retrieve legal references from a S3 Vectors knowledge base. Based on the legal issue, 
+formulate a query to use this tool to retrieve relevant information from the knowledge base. Use the retrieved information to 
+provide a detailed and comprehensive advice to the user.
 
 Be concise, respectful, and plain-spoken."""
 
@@ -64,6 +76,7 @@ async def run_chat(
     agent = Agent(
         name="Legal Companion",
         instructions=_chat_instructions(),
+        tools=[get_legal_references],
         model=model,
     )
     user_input = _transcript_for_agent(messages)

@@ -25,6 +25,7 @@ _consultation_crud = get_crud(Consultation)
     status_code=status.HTTP_201_CREATED,
 )
 def create_case_reference(
+    request: Request,
     body: CaseReferenceCreate,
     session: Session = Depends(get_db),
 ) -> CaseReference:
@@ -33,6 +34,12 @@ def create_case_reference(
         if parent is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=HTTP_404
+            )
+        owner = get_clerk_user_id(request)
+        if parent.clerk_user_id != owner:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You may not link a case to another user's consultation.",
             )
     row = _case_ref_crud.create(session, data=body.model_dump())
     session.commit()
