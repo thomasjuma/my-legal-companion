@@ -1,0 +1,13 @@
+<header class="app-bar">
+  <a routerLink="/" class="brand" [routerLinkActive]="'on'" [routerLinkActiveOptions]="{ exact: true }">
+    Legal Companion
+  </a>
+  <nav class="app-nav" aria-label="Main">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"> Home </a>
+    <a routerLink="/consultations" routerLinkActive="active"> Consultations </a>
+    <a routerLink="/chat" routerLinkActive="active"> Chat </a>
+  </nav>
+</header>
+<main class="app-main">
+  <router-outlet />
+</main>

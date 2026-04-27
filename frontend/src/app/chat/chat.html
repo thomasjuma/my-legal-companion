@@ -1,0 +1,112 @@
+<div class="chat-page">
+  <div class="split">
+    <section class="panel chat-panel" aria-label="Assistant chat">
+      <header class="panel-head">
+        <h1>Chat</h1>
+        <p class="panel-sub">
+          Messages are sent to the Legal Companion assistant via
+          <code>/api/chat/messages</code>.
+        </p>
+      </header>
+
+      @if (error()) {
+        <p class="banner err" role="alert">{{ error() }}</p>
+      }
+
+      <div #scrollArea class="thread" role="log" aria-live="polite" aria-relevant="additions">
+        @if (!transcript().length && !sending()) {
+          <p class="hint">
+            Ask a question to start. The assistant gives general information only and is not a
+            substitute for legal advice from a licensed professional.
+          </p>
+        }
+        @for (m of transcript(); track m.key) {
+          <div
+            class="bubble"
+            [class.user]="m.role === 'user'"
+            [class.assistant]="m.role === 'assistant'"
+            [class.system]="m.role === 'system'"
+          >
+            <span class="role-label">{{ m.role }}</span>
+            <div class="bubble-body">{{ m.content }}</div>
+          </div>
+        }
+        @if (sending()) {
+          <div class="bubble assistant pending" aria-busy="true">
+            <span class="role-label">assistant</span>
+            <div class="bubble-body">
+              <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              Thinking…
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="composer">
+        <label class="sr-only" for="chat-input">Your message</label>
+        <textarea
+          id="chat-input"
+          rows="3"
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+          (keydown)="onComposerKeydown($event)"
+          [disabled]="sending()"
+          placeholder="Type your message… (Enter to send, Shift+Enter for new line)"
+        ></textarea>
+        <div class="composer-row">
+          @if (lastModel()) {
+            <span class="model-tag">Model: {{ lastModel() }}</span>
+          } @else {
+            <span class="model-tag muted">Powered by OpenAI via API</span>
+          }
+          <button type="button" (click)="send()" [disabled]="sending() || !draft().trim()">
+            Send
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel report-panel" aria-label="Report preview">
+      <header class="report-head">
+        <h2>Consultation report</h2>
+        <p class="report-badge">Placeholder</p>
+      </header>
+      <div class="report-body">
+        <h3 class="report-title">Draft report — not generated from this chat</h3>
+        <p class="report-meta">Prepared for: [Client name] · Matter reference: [REF-0000]</p>
+
+        <h4>1. Executive summary</h4>
+        <p>
+          This section will summarize the user’s objectives, key risks, and recommended next steps
+          once a full consultation workflow is connected. For now, this text is static placeholder
+          content shown beside the live assistant conversation.
+        </p>
+
+        <h4>2. Background and facts</h4>
+        <p>
+          [Placeholder] Brief narrative of the situation as understood from intake materials,
+          relevant dates, parties involved, and any documents reviewed.
+        </p>
+
+        <h4>3. Issues and analysis</h4>
+        <p>
+          [Placeholder] Identification of legal or procedural issues, applicable frameworks at a
+          high level, and factors that would influence how a qualified attorney might approach the
+          matter.
+        </p>
+
+        <h4>4. Recommendations</h4>
+        <p>
+          [Placeholder] Suggested actions, documentation to gather, and circumstances under which
+          escalation to counsel would be appropriate.
+        </p>
+
+        <h4>5. Disclaimers</h4>
+        <p>
+          This report area is for layout preview only. It does not reflect output from the chat
+          assistant and does not constitute legal advice.
+        </p>
+      </div>
+    </aside>
+  </div>
+</div>

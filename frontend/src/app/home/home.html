@@ -1,0 +1,73 @@
+<div class="page">
+  <header class="head">
+    <h1>Dashboard</h1>
+    <p class="sub">
+      API status
+      <span class="pill" [class.ok]="apiStatus() === 'ok'">
+        {{ apiStatus() ?? "…" }}
+      </span>
+    </p>
+  </header>
+
+  @if (loadError()) {
+    <p class="banner err" role="alert">{{ loadError() }}</p>
+  }
+  @if (formError()) {
+    <p class="banner err" role="alert">{{ formError() }}</p>
+  }
+
+  <a routerLink="/consultations" class="teaser">
+    <h2>Consultations</h2>
+    <p>View, create, and open full text for all consultation records.</p>
+    <span class="teaser-link">Open consultations →</span>
+  </a>
+
+  <div class="grid one">
+    <section class="card">
+      <h2>Case references</h2>
+      <p class="note">
+        Add links related to a consultation, or without a link to a specific consultation.
+      </p>
+      <form (ngSubmit)="addCaseReference()" class="form">
+        <label>
+          <span>Title</span>
+          <input name="title" [(ngModel)]="newCaseRef.title" required />
+        </label>
+        <label>
+          <span>URL</span>
+          <input
+            name="url"
+            type="url"
+            [(ngModel)]="newCaseRef.url"
+            placeholder="https://"
+            required
+          />
+        </label>
+        <label>
+          <span>Consultation ID (optional)</span>
+          <input
+            name="cid"
+            [(ngModel)]="newCaseRef.consultationId"
+            inputmode="numeric"
+            placeholder="e.g. 1"
+          />
+        </label>
+        <button type="submit" [disabled]="busy()">Add case reference</button>
+      </form>
+      <ul class="list">
+        @for (r of caseReferences(); track r.id) {
+          <li>
+            <a [href]="r.url" rel="noreferrer" target="_blank">{{ r.title }}</a>
+            <span class="meta"
+              >#{{ r.id }}@if (r.consultation_id) {
+                <span> · consult {{ r.consultation_id }}</span>
+              }</span
+            >
+          </li>
+        } @empty {
+          <li class="empty">No case references yet.</li>
+        }
+      </ul>
+    </section>
+  </div>
+</div>

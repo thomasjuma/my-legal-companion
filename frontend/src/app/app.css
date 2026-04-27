@@ -1,0 +1,72 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #18181b;
+  background: #f8f8f9;
+}
+
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #e4e4e7;
+  background: #fff;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  color: #18181b;
+  letter-spacing: -0.02em;
+}
+
+.brand:hover,
+.brand:focus-visible {
+  color: #1d4ed8;
+  outline: none;
+}
+
+a.brand.on {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.app-nav a {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: #52525b;
+  border-radius: 6px;
+}
+
+.app-nav a:hover,
+.app-nav a:focus-visible {
+  color: #18181b;
+  background: #f4f4f5;
+  outline: none;
+}
+
+.app-nav a.active {
+  color: #18181b;
+  background: #e4e4e7;
+  font-weight: 500;
+}
+
+.app-main {
+  padding: 0;
+}
