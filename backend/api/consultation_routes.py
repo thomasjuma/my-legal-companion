@@ -8,7 +8,7 @@ from database.models import Consultation
 
 from schemas import ConsultationCreate, ConsultationRead
 
-router = APIRouter(prefix="/consultations", tags=["consultations"])
+router = APIRouter(prefix="/api/consultations", tags=["consultations"])
 _consultation_crud = get_crud(Consultation)
 
 

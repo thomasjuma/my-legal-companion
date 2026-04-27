@@ -9,7 +9,7 @@ from database.models import CaseReference, Consultation
 from http_messages import HTTP_404
 from schemas import CaseReferenceCreate, CaseReferenceRead
 
-router = APIRouter(prefix="/case-references", tags=["case_references"])
+router = APIRouter(prefix="/api/case-references", tags=["case_references"])
 _case_ref_crud = get_crud(CaseReference)
 _consultation_crud = get_crud(Consultation)
 
