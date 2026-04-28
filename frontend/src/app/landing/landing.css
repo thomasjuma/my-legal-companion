@@ -1,31 +1,66 @@
 :host {
   display: block;
-  padding: 2.5rem 1.25rem 3rem;
-  max-width: 40rem;
+  padding: 1.5rem 1rem 3rem;
+  margin: 0 auto;
+  min-height: calc(100vh - 3.5rem);
+  background:
+    radial-gradient(circle at top right, rgba(29, 78, 216, 0.12), transparent 35%),
+    radial-gradient(circle at 20% 20%, rgba(14, 116, 144, 0.1), transparent 28%),
+    #f8fafc;
+}
+
+.landing {
+  display: grid;
+  gap: 1rem;
+}
+
+.shell {
+  width: min(1100px, 100%);
   margin: 0 auto;
 }
 
+.hero {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.eyebrow {
+  margin: 0 0 0.45rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1d4ed8;
+}
+
 .hero h1 {
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-size: clamp(2rem, 4vw, 2.85rem);
   font-weight: 700;
   letter-spacing: -0.03em;
-  margin: 0 0 0.75rem;
+  line-height: 1.15;
+  margin: 0 0 0.85rem;
   color: #0f172a;
 }
 
 .lede {
-  margin: 0 0 1.5rem;
+  margin: 0 0 1.4rem;
   font-size: 1.05rem;
   line-height: 1.55;
-  color: #475569;
+  color: #334155;
+  max-width: 48ch;
 }
 
 .cta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem 0.75rem;
+  gap: 0.7rem 0.75rem;
   align-items: center;
-  margin-bottom: 2.25rem;
+  margin-bottom: 1.15rem;
 }
 
 .btn {
@@ -36,49 +71,163 @@
   font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid transparent;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  transform: translateY(-1px);
 }
 
 .btn-primary {
   color: #fff;
-  background: #1d4ed8;
-  border-color: #1d4ed8;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+  border-color: #1e40af;
 }
 
 .btn-primary:hover,
 .btn-primary:focus-visible {
-  background: #1e40af;
-  border-color: #1e40af;
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  border-color: #1e3a8a;
   outline: none;
 }
 
 .btn-ghost {
-  color: #1e3a5f;
+  color: #1e293b;
   background: #fff;
-  border-color: #e2e8f0;
+  border-color: #cbd5e1;
 }
 
 .btn-ghost:hover,
 .btn-ghost:focus-visible {
-  background: #f8fafc;
+  background: #f1f5f9;
   border-color: #cbd5e1;
   outline: none;
 }
 
-.bullets {
+.trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+}
+
+.trust-row span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  padding: 0.28rem 0.6rem;
+  font-size: 0.78rem;
+  color: #334155;
+}
+
+.hero-card {
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+.card-label {
   margin: 0;
-  padding: 0 0 0 1.1rem;
-  color: #64748b;
-  line-height: 1.6;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #475569;
+  font-weight: 700;
+}
+
+.hero-card ul {
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hero-card h3 {
+  margin: 0 0 0.2rem;
   font-size: 0.95rem;
+  color: #0f172a;
 }
 
-.bullets li + li {
-  margin-top: 0.4rem;
+.hero-card p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #475569;
 }
 
-.landing {
-  min-height: 50vh;
+.features,
+.workflow {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.15rem 1.2rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.features h2,
+.workflow h2 {
+  margin: 0 0 0.9rem;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.feature-grid {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.feature {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.85rem 0.9rem;
+  background: #f8fafc;
+}
+
+.feature h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.feature p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.workflow ol {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.workflow li {
+  color: #334155;
+  line-height: 1.45;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 900px) {
+  :host {
+    padding-top: 2rem;
+  }
+
+  .hero {
+    grid-template-columns: 1.35fr 1fr;
+    align-items: stretch;
+    gap: 1.1rem;
+    padding: 1.5rem;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

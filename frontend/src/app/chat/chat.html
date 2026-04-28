@@ -68,43 +68,23 @@
     <aside class="panel report-panel" aria-label="Report preview">
       <header class="report-head">
         <h2>Consultation report</h2>
-        <p class="report-badge">Placeholder</p>
+        <p class="report-badge" [class.ready]="consultationReport()">
+          {{ consultationReport() ? 'Generated' : 'Waiting' }}
+        </p>
       </header>
       <div class="report-body">
-        <h3 class="report-title">Draft report — not generated from this chat</h3>
-        <p class="report-meta">Prepared for: [Client name] · Matter reference: [REF-0000]</p>
-
-        <h4>1. Executive summary</h4>
-        <p>
-          This section will summarize the user’s objectives, key risks, and recommended next steps
-          once a full consultation workflow is connected. For now, this text is static placeholder
-          content shown beside the live assistant conversation.
-        </p>
-
-        <h4>2. Background and facts</h4>
-        <p>
-          [Placeholder] Brief narrative of the situation as understood from intake materials,
-          relevant dates, parties involved, and any documents reviewed.
-        </p>
-
-        <h4>3. Issues and analysis</h4>
-        <p>
-          [Placeholder] Identification of legal or procedural issues, applicable frameworks at a
-          high level, and factors that would influence how a qualified attorney might approach the
-          matter.
-        </p>
-
-        <h4>4. Recommendations</h4>
-        <p>
-          [Placeholder] Suggested actions, documentation to gather, and circumstances under which
-          escalation to counsel would be appropriate.
-        </p>
-
-        <h4>5. Disclaimers</h4>
-        <p>
-          This report area is for layout preview only. It does not reflect output from the chat
-          assistant and does not constitute legal advice.
-        </p>
+        @if (consultationReport()) {
+          <h3 class="report-title">Final consultation report</h3>
+          @if (consultationReportSummary()) {
+            <p class="report-meta">{{ consultationReportSummary() }}</p>
+          }
+          <div class="report-content">{{ consultationReport() }}</div>
+        } @else {
+          <h3 class="report-title">Report will appear here</h3>
+          <p class="report-meta">
+            A final report is generated when the evaluator score reaches the required threshold.
+          </p>
+        }
       </div>
     </aside>
   </div>

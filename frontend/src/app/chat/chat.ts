@@ -24,6 +24,8 @@ export class ChatComponent {
   protected readonly sending = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly lastModel = signal<string | null>(null);
+  protected readonly consultationReport = signal<string | null>(null);
+  protected readonly consultationReportSummary = signal<string | null>(null);
 
   protected send(): void {
     const text = this.draft().trim();
@@ -48,6 +50,8 @@ export class ChatComponent {
     this.api.sendMessage({ messages: payload }).subscribe({
       next: (res) => {
         this.lastModel.set(res.model);
+        this.consultationReportSummary.set(res.final_report_summary ?? null);
+        this.consultationReport.set(res.final_report ?? null);
         this.transcript.update((t) => [
           ...t,
           { key: this.seq++, role: 'assistant', content: res.message },

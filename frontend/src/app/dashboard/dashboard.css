@@ -1,7 +1,7 @@
 :host {
   display: block;
   padding: 1.5rem 1.25rem 2rem;
-  max-width: 32rem;
+  max-width: 46rem;
 }
 
 h1 {
@@ -18,6 +18,51 @@ h1 {
 
 .actions {
   margin: 0 0 1.5rem;
+}
+
+.profile {
+  margin: 0 0 1.25rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  background: #fff;
+  padding: 1rem 1rem 0.5rem;
+}
+
+.profile h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.details {
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.details div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.details dt {
+  margin: 0;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #71717a;
+}
+
+.details dd {
+  margin: 0;
+  font-size: 0.94rem;
+  color: #27272a;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.84rem;
 }
 
 .back a {

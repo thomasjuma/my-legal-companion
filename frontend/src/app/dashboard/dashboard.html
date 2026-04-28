@@ -2,11 +2,40 @@
   <h1 id="dash-title">Account</h1>
   @if (clerk.user(); as user) {
     <p class="greeting">Signed in as {{ user.primaryEmailAddress?.emailAddress ?? user.id }}</p>
+    <section class="profile" aria-label="User profile information">
+      <h2>Profile details</h2>
+      <dl class="details">
+        <div>
+          <dt>Full name</dt>
+          <dd>{{ user.fullName ?? user.firstName ?? user.lastName ?? 'Not set' }}</dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd>{{ user.primaryEmailAddress?.emailAddress ?? 'Not set' }}</dd>
+        </div>
+        <div>
+          <dt>Username</dt>
+          <dd>{{ user.username ?? 'Not set' }}</dd>
+        </div>
+        <div>
+          <dt>User ID</dt>
+          <dd class="mono">{{ user.id }}</dd>
+        </div>
+        <div>
+          <dt>Account created</dt>
+          <dd>{{ user.createdAt ? (user.createdAt | date: 'medium') : 'Unknown' }}</dd>
+        </div>
+        <div>
+          <dt>Last updated</dt>
+          <dd>{{ user.updatedAt ? (user.updatedAt | date: 'medium') : 'Unknown' }}</dd>
+        </div>
+      </dl>
+    </section>
   }
   <p class="actions">
     <clerk-user-button />
   </p>
   <p class="back">
-    <a routerLink="/home">Back to app</a>
+    <a routerLink="/chat">Back to app</a>
   </p>
 </section>

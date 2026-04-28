@@ -66,4 +66,8 @@ export interface ChatRequest {
 export interface ChatResponse {
   message: string;
   model: string;
+  evaluation_feedback?: string | null;
+  evaluation_score?: number | null;
+  final_report_summary?: string | null;
+  final_report?: string | null;
 }

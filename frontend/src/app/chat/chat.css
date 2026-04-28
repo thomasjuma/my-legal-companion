@@ -268,6 +268,12 @@
   background: #fff;
 }
 
+.report-badge.ready {
+  color: #166534;
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
 .report-body {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -303,6 +309,11 @@
 
 .report-body p {
   margin: 0 0 0.5rem;
+}
+
+.report-content {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .sr-only {

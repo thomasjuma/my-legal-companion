@@ -1,23 +1,70 @@
 <div class="landing">
-  <section class="hero" aria-labelledby="landing-title">
-    <h1 id="landing-title">Legal Companion</h1>
-    <p class="lede">
-      Connect consultations, case references, and the assistant in one place. Sign in to use the
-      app.
-    </p>
-    <div class="cta">
-      @if (clerk.isLoaded() && clerk.isSignedIn()) {
-        <a class="btn btn-primary" routerLink="/home">Open app</a>
-        <a class="btn btn-ghost" routerLink="/dashboard">Account</a>
-      } @else {
-        <a class="btn btn-primary" routerLink="/sign-up">Get started</a>
-        <a class="btn btn-ghost" routerLink="/sign-in">Sign in</a>
-      }
+  <section class="hero shell" aria-labelledby="landing-title">
+    <div class="hero-copy">
+      <p class="eyebrow">Trusted legal guidance workflow</p>
+      <h1 id="landing-title">Professional legal support, organized in one secure workspace.</h1>
+      <p class="lede">
+        Legal Companion helps you capture consultation context, generate practical legal guidance,
+        and keep high-quality reports ready for future reference.
+      </p>
+      <div class="cta">
+        @if (clerk.isLoaded() && clerk.isSignedIn()) {
+          <a class="btn btn-primary" routerLink="/home">Open workspace</a>
+          <a class="btn btn-ghost" routerLink="/chat">Continue consultation</a>
+        } @else {
+          <a class="btn btn-primary" routerLink="/sign-up">Start free</a>
+          <a class="btn btn-ghost" routerLink="/sign-in">Sign in</a>
+        }
+      </div>
+      <div class="trust-row" aria-label="Core strengths">
+        <span>AI-assisted legal analysis</span>
+        <span>Private user history</span>
+        <span>Report-ready outputs</span>
+      </div>
+    </div>
+    <aside class="hero-card" aria-label="Platform highlights">
+      <p class="card-label">What you get</p>
+      <ul>
+        <li>
+          <h3>Structured consultations</h3>
+          <p>Track legal matters, notes, and references in one timeline.</p>
+        </li>
+        <li>
+          <h3>Quality gated reports</h3>
+          <p>Evaluator scoring helps ensure only strong advice becomes final reports.</p>
+        </li>
+        <li>
+          <h3>Secure account boundaries</h3>
+          <p>Each user sees only their own report history through Clerk identity.</p>
+        </li>
+      </ul>
+    </aside>
+  </section>
+
+  <section class="features shell" aria-labelledby="features-title">
+    <h2 id="features-title">Built for modern legal workflows</h2>
+    <div class="feature-grid">
+      <article class="feature">
+        <h3>Consultation memory</h3>
+        <p>Keep every generated report available for quick retrieval and client follow-up.</p>
+      </article>
+      <article class="feature">
+        <h3>Actionable guidance</h3>
+        <p>Receive concise legal steps, issue framing, and recommended next actions.</p>
+      </article>
+      <article class="feature">
+        <h3>Reference-aware advice</h3>
+        <p>Connect legal references and case links to improve context and traceability.</p>
+      </article>
     </div>
   </section>
-  <ul class="bullets" aria-label="What you can do after signing in">
-    <li>Track consultations and link external references</li>
-    <li>Chat with the legal assistant backed by your API</li>
-    <li>Secure access with Clerk on every request</li>
-  </ul>
+
+  <section class="workflow shell" aria-labelledby="workflow-title">
+    <h2 id="workflow-title">How it works</h2>
+    <ol>
+      <li><strong>Ask:</strong> Share your legal question in the chat workspace.</li>
+      <li><strong>Evaluate:</strong> Advice is quality-scored before finalization.</li>
+      <li><strong>Store:</strong> Final reports are saved to your personal consultation history.</li>
+    </ol>
+  </section>
 </div>
