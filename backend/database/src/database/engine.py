@@ -26,7 +26,7 @@ def get_engine() -> Engine:
         return _engine
 
     url = get_database_url()
-    _log.info("Creating database engine for URL: %s", url)
+    _log.info("Creating database engine for URL prefix: %s", url.split("://", 1)[0])
     if url.startswith("sqlite"):
         connect_args: dict = {"check_same_thread": False} if ":memory:" in url else {}
         if ":memory:" in url:
@@ -41,12 +41,14 @@ def get_engine() -> Engine:
             future=True,
         )
     else:
+        db_connect_timeout = int((os.environ.get("DB_CONNECT_TIMEOUT") or "8"))
         _engine = create_engine(
             url,
             poolclass=QueuePool,
             pool_pre_ping=True,
             pool_size=int((os.environ.get("DB_POOL_SIZE") or "5")),
             max_overflow=int((os.environ.get("DB_POOL_MAX_OVERFLOW") or "10")),
+            connect_args={"connect_timeout": db_connect_timeout},
             future=True,
         )
 

@@ -20,4 +20,4 @@ dependencies = [
 package = false
 
 [tool.uv.sources]
-legal-companion-database = { path = "../database", editable = true }
+legal-companion-database = { path = "../database", editable = false }

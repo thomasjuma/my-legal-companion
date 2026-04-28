@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -17,15 +18,28 @@ from routers import auth_routes, consultation_routes, case_reference_routes, cha
 _log = logging.getLogger(__name__)
 
 
+def _init_db_blocking() -> None:
+    configure()
+    init_db()
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     # Repo-root `.env` in local dev; in App Runner / Docker only process env (e.g. DATABASE_URL) applies.
     load_dotenv(
         Path(__file__).resolve().parent.parent.parent / ".env", override=False
     )
+    startup_db_timeout_s = int((os.environ.get("STARTUP_DB_TIMEOUT_SECONDS") or "20"))
     try:
-        configure()
-        init_db()
+        await asyncio.wait_for(
+            asyncio.to_thread(_init_db_blocking),
+            timeout=max(1, startup_db_timeout_s),
+        )
+    except TimeoutError:
+        _log.exception(
+            "DB startup timed out after %ss — API will still start; check DB connectivity.",
+            startup_db_timeout_s,
+        )
     except Exception:
         # Do not block startup: App Runner health checks need GET /health. Fix DB / env if APIs fail.
         _log.exception("DB startup failed — check DATABASE_URL, Aurora SG, and network from App Runner")

@@ -23,12 +23,12 @@ COPY backend/api/pyproject.toml backend/api/uv.lock ./
 # Pre-install hatchling and skip isolated build for the path dep so a second PyPI
 # fetch for `build-system.requires` is not needed (avoids common timeouts to PyPI in CI).
 RUN uv venv \
-    && uv pip install hatchling editables \
+    && uv pip install hatchling \
     && uv sync --frozen --no-dev --no-build-isolation-package legal-companion-database
 
 COPY backend/api/ ./
 
 EXPOSE 8000
-# --app-dir sets sys.path to app/ so all flat imports (core, routers, services)
-# resolve correctly — same as running `uv run uvicorn main:app` from inside app/.
-CMD ["uv", "run", "uvicorn", "main:app", "--app-dir", "/app/backend/api/app", "--host", "0.0.0.0", "--port", "8000"]
+# Run directly from the prebuilt virtualenv to avoid any runtime dependency
+# resolution (important in restricted egress environments like App Runner VPC).
+CMD ["/app/backend/api/.venv/bin/python", "-m", "uvicorn", "main:app", "--app-dir", "/app/backend/api/app", "--host", "0.0.0.0", "--port", "8000"]
