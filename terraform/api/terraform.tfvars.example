@@ -1,10 +1,30 @@
-# Part: API (App Runner) — same Clerk/OpenAI/cors as frontend if you share one tfvars copy.
+# API (App Runner + ECR) configuration
+# Copy this file to terraform.tfvars and fill with your values.
 
-aws_region = "us-east-1"
+aws_region = "eu-west-1"
 
-clerk_jwks_url = "https://YOUR-INSTANCE.clerk.accounts.dev/.well-known/jwks.json"
-clerk_issuer   = "https://YOUR-INSTANCE.clerk.accounts.dev"
+# Secrets / runtime config
+openai_api_key = "replace-me"
+chat_openai_model = "gpt-4o"
 
-# openai_api_key = "sk-..."
+# Aurora wiring (from terraform/database outputs)
+aurora_cluster_arn      = "arn:aws:rds:eu-west-1:123456789012:cluster:counsel-aurora-cluster"
+aurora_cluster_endpoint = "counsel-aurora-cluster.cluster-xxxxxxxxxxxx.eu-west-1.rds.amazonaws.com"
+aurora_secret_arn       = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:counsel-aurora-credentials-xxxxx"
+aurora_database         = "counsel"
 
-# cors_extra_origins = ["https://YOUR_CLOUDFRONT_URL.cloudfront.net"]
+# Clerk JWT validation
+clerk_jwks_url = "https://<your-clerk-domain>/.well-known/jwks.json"
+clerk_issuer   = "https://<your-clerk-domain>"
+
+# Optional runtime values
+cors_origins       = "http://localhost:3000,http://localhost:4200"
+sqs_queue_arn      = ""
+sqs_queue_url      = ""
+sagemaker_endpoint = ""
+
+# App Runner sizing/deploy behavior
+image_tag                 = "latest"
+auto_deployments_enabled  = true
+instance_cpu              = "1 vCPU"
+instance_memory           = "2 GB"
