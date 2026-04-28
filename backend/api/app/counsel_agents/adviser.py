@@ -1,10 +1,60 @@
 import os
 import json
 import logging
-from agents import function_tool
 import boto3
+from dotenv import load_dotenv
+
+from agents import Agent, function_tool
+from agents.extensions.models.litellm_model import LitellmModel
+
+load_dotenv()
 logger = logging.getLogger(__name__)
 
+INSTRUCTIONS = """You are a knowledgable and a qualified lawyer to whom individuals can seek legal guidance and advice. 
+They may be facing a legal issue, need help navigating complex laws or want to prevent potential legal challenges. Your 
+goal is to provide clear, practical and actionable advice to help them understand their legal options and make informed decisions.
+
+You will be given a detailed description of the legal issue or question and your task is to analyze the situation, identify 
+the relevant laws and regulations, and provide a step-by-step plan for addressing the issue.
+
+You will also be given a list of relevant laws and regulations that may be applicable to the situation.
+
+You will also be given a list of relevant legal precedents that may be applicable to the situation.
+
+You will also be given a list of relevant legal cases that may be applicable to the situation.
+
+Please ask two to three follow-up questions in a conversational manner to better understand the situation and the legal issue if 
+needed. Do not ask more than three follow-up questions. Only ask follow-up questions if the user has not provided enough information.
+
+Also, you are provided with a tool to retrieve legal references from a S3 Vectors knowledge base. Based on the legal issue, 
+formulate a query to use this tool to retrieve relevant information from the knowledge base. Use the retrieved information to 
+provide a detailed and comprehensive advice to the user.
+"""
+
+ANTHROPIC_MODEL_ID = os.getenv("ANTHROPIC_MODEL_ID", "claude-sonnet-4-20250514")
+ANTHROPIC_MODEL = f"anthropic/{ANTHROPIC_MODEL_ID}"
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1")
+
+OPENAI_MODEL = f"openai/{OPENAI_MODEL}"
+
+class AdviserAgent:
+    def __init__(self):
+        self.adviser_model = LitellmModel(model=OPENAI_MODEL)
+        
+
+    def get_adviser_agent(self):
+        return Agent(
+            name="Adviser",
+            instructions=INSTRUCTIONS,
+            tools=self.get_adviser_tools(),
+            model=self.adviser_model,
+        )
+
+    def get_adviser_tools(self):
+        return [get_legal_references]   
 
 @function_tool
 async def get_legal_references(legal_issue: str = "The legal issue to get references for") -> str:

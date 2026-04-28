@@ -3,11 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
-from clerk_auth import clerk_bearer, get_clerk_user_id
+from core.clerk_auth import clerk_bearer, get_clerk_user_id
 from database import get_crud, get_db
 from database.models import Consultation
 
-from schemas import ConsultationCreate, ConsultationRead
+from core.schemas import ConsultationCreate, ConsultationRead
 
 router = APIRouter(
     prefix="/api/consultations",

@@ -32,6 +32,10 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     message: str
     model: str
+    evaluation_feedback: str | None = None
+    evaluation_score: float | None = None
+    final_report_summary: str | None = None
+    final_report: str | None = None
 
 
 class ConsultationCreate(BaseModel):

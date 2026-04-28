@@ -3,18 +3,28 @@ from __future__ import annotations
 import os
 import logging
 from datetime import datetime
+from typing import TypedDict
 
 from agents import Agent, Runner
 from agents.extensions.models.litellm_model import LitellmModel
 
-from schemas import ChatMessage
-from tools import get_legal_references
+from core.schemas import ChatMessage
+from counsel_agents.evaluator import Evaluation, evaluate_legal_advice
+from counsel_agents.adviser import get_legal_references
+from counsel_agents.writer import draft_legal_report, LegalReport
+
 
 logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
 
 _log = logging.getLogger(__name__)
 
 _DEFAULT_MAX_TURNS = 5
+
+
+class ChatRunResult(TypedDict):
+    message: str
+    evaluation: Evaluation | None
+    generated_report: LegalReport | None
 
 
 def _transcript_for_agent(messages: list[ChatMessage]) -> str:
@@ -62,7 +72,7 @@ def _get_chat_model() -> str:
 
 async def run_chat(
     messages: list[ChatMessage], *, max_turns: int | None = None
-) -> str:
+) -> ChatRunResult:
     if not os.environ.get("OPENAI_API_KEY", "").strip():
         msg = "OPENAI_API_KEY is not set. Add it to your environment to use chat."
         _log.warning(msg)
@@ -88,7 +98,28 @@ async def run_chat(
         input=user_input,
         max_turns=max(1, min(turns, 50)),
     )
-    return result.final_output or ""
+    advice = result.final_output or ""
+    evaluation: Evaluation | None = None
+    generated_report: LegalReport | None = None
+    if advice:
+        try:
+            evaluation = await evaluate_legal_advice(
+                adviser_instructions=_chat_instructions(),
+                messages=messages,
+                legal_advice=advice,
+            )
+        except Exception:
+            _log.exception("Evaluator agent failed")
+        if evaluation is not None and evaluation.score >= 80:
+            try:
+                generated_report = await draft_legal_report(legal_advice=advice)
+            except Exception:
+                _log.exception("Report writer agent failed")
+    return {
+        "message": advice,
+        "evaluation": evaluation,
+        "generated_report": generated_report,
+    }
 
 
 def get_effective_model_name() -> str:

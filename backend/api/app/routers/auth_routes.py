@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
 
-from clerk_auth import clerk_bearer
+from core.clerk_auth import clerk_bearer
+
 
 router = APIRouter(
     prefix="/api/auth",

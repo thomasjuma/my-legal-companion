@@ -3,12 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from clerk_auth import clerk_bearer, get_clerk_user_id
+from core.clerk_auth import clerk_bearer, get_clerk_user_id
 from database import get_crud, get_db
 from database.models import CaseReference, Consultation
 
-from http_messages import HTTP_404
-from schemas import CaseReferenceCreate, CaseReferenceRead
+from core.schemas import CaseReferenceCreate, CaseReferenceRead
 
 router = APIRouter(
     prefix="/api/case-references",
@@ -33,7 +32,7 @@ def create_case_reference(
         parent = _consultation_crud.get(session, body.consultation_id)
         if parent is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=HTTP_404
+                status_code=status.HTTP_404_NOT_FOUND, detail="Consultation not found"
             )
         owner = get_clerk_user_id(request)
         if parent.clerk_user_id != owner:

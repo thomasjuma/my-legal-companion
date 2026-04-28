@@ -8,16 +8,15 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-import http_messages
-
 _log = logging.getLogger(__name__)
 
 _NORMALIZED: dict[int, str] = {
-    403: http_messages.HTTP_403,
-    404: http_messages.HTTP_404,
-    429: http_messages.HTTP_429,
-    500: http_messages.HTTP_500,
-    503: http_messages.HTTP_503,
+    403: "You don't have permission to access this resource.",
+    404: "The requested resource was not found.",
+    429: "Too many requests. Please slow down and try again later.",
+    500: "An internal error occurred. Please try again later.",
+    503: "The service is temporarily unavailable. Please try again later.",
+    400: "The request could not be completed. Please check your information and try again.",
 }
 
 
@@ -44,12 +43,12 @@ def register_exception_handlers(app: FastAPI) -> None:
             _log.info("Database integrity error", exc_info=exc)
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                content={"detail": http_messages.HTTP_400},
+                content={"detail": _NORMALIZED[400]},
             )
-        _log.exception("Database error")
+        _log.error("Database error", exc_info=exc)
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"detail": http_messages.HTTP_503},
+            content={"detail": _NORMALIZED[503]},
         )
 
     @app.exception_handler(Exception)
@@ -57,5 +56,5 @@ def register_exception_handlers(app: FastAPI) -> None:
         _log.exception("Unexpected error in request")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": http_messages.HTTP_500},
+            content={"detail": _NORMALIZED[500]},
         )

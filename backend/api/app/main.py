@@ -11,11 +11,8 @@ from starlette.middleware.cors import CORSMiddleware
 
 from database import configure, init_db
 
-import auth_routes
-import case_reference_routes
-import chat_routes
-import consultation_routes
-from errors import register_exception_handlers
+from core.errors import register_exception_handlers
+from routers import auth_routes, consultation_routes, case_reference_routes, chat_routes
 
 _log = logging.getLogger(__name__)
 

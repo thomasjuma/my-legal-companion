@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
     && rm -rf /var/lib/apt/lists/*
 ENV PATH="/root/.local/bin:$PATH"
 
+# pyproject.toml / uv.lock live in backend/api/ — keep this as WORKDIR so
+# uv sync resolves the path dependency (../database) correctly.
 WORKDIR /app/backend/api
 
 # Path dependency: ../database
@@ -27,4 +29,6 @@ RUN uv venv \
 COPY backend/api/ ./
 
 EXPOSE 8000
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --app-dir sets sys.path to app/ so all flat imports (core, routers, services)
+# resolve correctly — same as running `uv run uvicorn main:app` from inside app/.
+CMD ["uv", "run", "uvicorn", "main:app", "--app-dir", "/app/backend/api/app", "--host", "0.0.0.0", "--port", "8000"]
