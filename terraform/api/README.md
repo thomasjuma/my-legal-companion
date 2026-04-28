@@ -52,6 +52,8 @@ terraform plan
 terraform apply
 ```
 
+If this is your first deploy in a fresh account, push the API image to ECR first (or use `scripts/deploy.py` / `scripts/deploy.sh`, which handles build/push).
+
 ## Build and push API image
 
 App Runner points to ECR image `${ecr_repository_url}:latest` by default.
@@ -89,6 +91,20 @@ cd terraform/api
 ./import_existing_resources.sh
 terraform plan
 terraform apply
+```
+
+- **`Failed to pull your application image. Reason: ECR image doesn't exist.`**
+  - The configured tag (default: `latest`) was not available in ECR at deploy time.
+  - Push an image first, then apply:
+
+```bash
+docker build -f backend/api/Dockerfile -t counsel-api:latest .
+cd terraform/api
+ECR_URL=$(terraform output -raw ecr_repository_url)
+aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin "${ECR_URL%%/*}"
+docker tag counsel-api:latest "${ECR_URL}:latest"
+docker push "${ECR_URL}:latest"
+terraform apply -replace=aws_apprunner_service.api
 ```
 
 - **App starts but DB calls fail**

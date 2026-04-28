@@ -47,6 +47,11 @@ resource "aws_ecr_repository" "api" {
   tags = local.common_tags
 }
 
+data "aws_ecr_image" "api" {
+  repository_name = aws_ecr_repository.api.name
+  image_tag       = var.image_tag
+}
+
 resource "aws_iam_role" "apprunner_ecr_access" {
   name = "${local.name_prefix}-apprunner-ecr-access"
 
@@ -190,7 +195,8 @@ resource "aws_apprunner_service" "api" {
 
     image_repository {
       image_repository_type = "ECR"
-      image_identifier      = "${aws_ecr_repository.api.repository_url}:${var.image_tag}"
+      # Pin to an existing digest so App Runner creation never points at a missing tag.
+      image_identifier = "${aws_ecr_repository.api.repository_url}@${data.aws_ecr_image.api.image_digest}"
 
       image_configuration {
         port = "8000"
