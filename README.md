@@ -73,3 +73,114 @@ graph TB
 - **API**: API Gateway
 - **Languages**: Python 3.12, TypeScript
 - **Container**: Docker
+
+## System Architecture (Implementation)
+
+The repository is organized as a multi-service monorepo:
+
+- `frontend/`: Angular 20 SPA (`my-legal-companion-ui`) with Clerk authentication (`ngx-clerk`).
+- `backend/api/`: FastAPI application serving authenticated `/api/*` routes and `/health`.
+- `backend/database/`: Shared SQLAlchemy package used by backend services.
+- `backend/assistant/`: Python service for autonomous/research workflows and tool orchestration.
+- `backend/ingest/`: Ingestion utilities for S3 vectors / search indexing.
+- `backend/scheduler/`: Scheduled job packaging (EventBridge/Lambda support code).
+- `terraform/`: Infrastructure-as-code split by domain (`api`, `frontend`, `database`, `assistant`, `ingestion`, `sagemaker`).
+- `scripts/`: Operational scripts for deployment, destroy, and local development.
+
+
+## Runtime Components
+
+### API Service (`backend/api`)
+
+- Framework: FastAPI + Uvicorn.
+- Auth: Clerk JWT validation (`fastapi-clerk-auth`).
+- AI orchestration: OpenAI Agents (`openai-agents[litellm]`).
+- Startup behavior:
+  - Loads root `.env` during local development.
+  - Initializes database on startup with timeout guard.
+  - Exposes `GET /health` for runtime/health checks.
+
+### Database Layer (`backend/database`)
+
+- Package: `legal-companion-database`.
+- ORM: SQLAlchemy (async-capable configuration).
+- Driver: Psycopg.
+- Cloud integration: Boto3 (for Aurora/Secrets flows).
+- Includes pytest-based tests under `backend/database/tests/`.
+
+### Frontend (`frontend`)
+
+- Framework: Angular 20, TypeScript 5.9, RxJS 7.8.
+- Auth client integration: Clerk publishable key and auth paths in environment files.
+- Main scripts:
+  - `npm start` (dev server)
+  - `npm run build` (production build)
+  - `npm test` (Karma/Jasmine unit tests)
+
+## API Surface (Current)
+
+Authenticated routes (Clerk token required):
+
+- `GET /api/auth/me`: returns Clerk user/session identity.
+- `POST /api/chat/messages`: submits chat turns and returns model response/evaluation/report fields.
+- `POST /api/consultations`, `GET /api/consultations`: create/list consultation records for current user.
+- `POST /api/case-references`, `GET /api/case-references`: create/list case references.
+
+Public route:
+
+- `GET /health`: basic liveness endpoint.
+
+## Local Development
+
+### Option A: Run everything with one command
+
+Use the helper script from repository root:
+
+```bash
+python3 scripts/run_local.py
+```
+
+This script checks prerequisites (`node`, `npm`, `uv`), verifies env files, then runs:
+
+- Backend at `http://localhost:8000`
+- Frontend at `http://localhost:4200`
+- API docs at `http://localhost:8000/docs`
+
+### Option B: Run services manually
+
+Backend:
+
+```bash
+cd backend/api
+uv sync
+uv run main.py
+```
+
+Frontend (separate terminal):
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+
+## Infrastructure and Deployment
+
+### Terraform module responsibilities
+
+- `terraform/database`: Aurora + related database prerequisites.
+- `terraform/api`: ECR + App Runner API service + runtime IAM policies.
+- `terraform/frontend`: S3 static hosting + CloudFront distribution + `/api/*` routing to App Runner.
+- `terraform/assistant`: assistant service infrastructure.
+- `terraform/ingestion`: ingestion and vector-storage related resources.
+- `terraform/sagemaker`: embedding endpoint resources.
+
+### CI/CD workflow (GitHub Actions)
+
+`.github/workflows/deploy.yml` runs on `main` pushes and manual dispatch:
+
+1. Authenticates to AWS via OIDC role assumption.
+2. Installs Python 3.12 + `uv`, Terraform, and Node 20.
+3. Imports existing API resources into Terraform state (`terraform/api/import_existing_resources.sh`).
+4. Executes `scripts/deploy.sh`.
